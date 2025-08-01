@@ -1,9 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
+// TEMP DEBUG: check if token is loading correctly from .env
+console.log("TOKEN from VITE env:", import.meta.env.VITE_DIRECTUS_TOKEN);
+
 const Hero = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showGamoola, setShowGamoola] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const soundRef = useRef<HTMLAudioElement | null>(null);
 
@@ -44,27 +48,55 @@ const Hero = () => {
       clearTimeout(gamoolaTimer);
     };
   }, []);
+  // 🔥 Fetch hero video from Directus
+  useEffect(() => {
+    const fetchHeroVideo = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_DIRECTUS_URL}/items/hero_section?fields=video.filename_disk,video.type`,
+          {
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_DIRECTUS_TOKEN}`,
+            },
+          }
+        );
 
+        const data = await res.json();
+        const filename = data?.data?.video?.filename_disk;
+
+        if (filename) {
+          setVideoUrl(
+            `${import.meta.env.VITE_DIRECTUS_URL}/assets/${filename}`
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch hero video:", err);
+      }
+    };
+
+    fetchHeroVideo();
+  }, []);
   return (
     <section
-  className="relative w-full h-screen bg-black text-white overflow-hidden z-0"
-  data-theme="dark"
-  style={{ marginTop: 0, paddingTop: 0, top: 0 }}
->
-
+      className="relative w-full h-screen bg-black text-white overflow-hidden z-0"
+      data-theme="dark"
+      style={{ marginTop: 0, paddingTop: 0, top: 0 }}
+    >
       {/* Audio element */}
       <audio ref={soundRef} src="/sfx/pop.mp3" preload="auto" />
 
-      {/* Background Video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute top-0 left-0 w-full h-full object-cover z-0"
-      >
-        <source src="https://lotus-media-store.s3.eu-north-1.amazonaws.com/websiteV2/public/videos/hero.mp4" type="video/mp4" />
-      </video>
+      {/* Background Video (now dynamic) */}
+      {videoUrl && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src={videoUrl} type="video/mp4" />
+        </video>
+      )}
 
       {/* "Welcome to" flipping letters */}
       <AnimatePresence>

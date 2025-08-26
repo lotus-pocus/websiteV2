@@ -1,10 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
-// TEMP DEBUG: check if token is loading correctly from .env
-console.log("TOKEN from VITE env:", import.meta.env.VITE_DIRECTUS_TOKEN);
-
 const Hero = () => {
+  // --- Overlay state ---
+  const [overlayColor, setOverlayColor] = useState("#000000");
+  const [overlayOpacity, setOverlayOpacity] = useState(0.35);
+  const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+  // --- Debug overlay via ?overlayTest ---
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const isDebug = new URLSearchParams(search).has("overlayTest");
+  const debugColor = "#FF00FF";
+  const debugOpacity = 0.85;
+
+  // --- Existing state ---
   const [showWelcome, setShowWelcome] = useState(true);
   const [showGamoola, setShowGamoola] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -22,70 +31,90 @@ const Hero = () => {
   useEffect(() => {
     const unlockAudio = () => {
       if (soundRef.current) {
-        soundRef.current.volume = 0; // Silent
+        soundRef.current.volume = 0;
         soundRef.current
           .play()
           .then(() => {
-            soundRef.current.pause();
-            soundRef.current.currentTime = 0;
-            soundRef.current.volume = 0.3; // Set your desired volume
+            soundRef.current?.pause();
+            if (soundRef.current) {
+              soundRef.current.currentTime = 0;
+              soundRef.current.volume = 0.3;
+            }
           })
           .catch(() => {});
       }
       window.removeEventListener("pointerdown", unlockAudio);
     };
-
     window.addEventListener("pointerdown", unlockAudio);
     return () => window.removeEventListener("pointerdown", unlockAudio);
   }, []);
 
   useEffect(() => {
-    const welcomeTimer = setTimeout(() => setShowWelcome(false), 1200);
-    const gamoolaTimer = setTimeout(() => setShowGamoola(true), 1400);
-
+    const t1 = setTimeout(() => setShowWelcome(false), 1200);
+    const t2 = setTimeout(() => setShowGamoola(true), 1400);
     return () => {
-      clearTimeout(welcomeTimer);
-      clearTimeout(gamoolaTimer);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, []);
-  // 🔥 Fetch hero video from Directus
+
+  // Fetch hero video + overlay from Directus
   useEffect(() => {
     const fetchHeroVideo = async () => {
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_DIRECTUS_URL}/items/hero_section?fields=video.filename_disk,video.type`,
-          {
-            headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_DIRECTUS_TOKEN}`,
-            },
-          }
-        );
+        const base = import.meta.env.VITE_DIRECTUS_URL as string;
+        const token = import.meta.env.VITE_DIRECTUS_TOKEN as string | undefined;
+
+        const url =
+          `${base}/items/hero_section` +
+          `?fields=video.filename_disk,video.type,overlay_color,overlay_opacity`;
+
+        const headers: Record<string, string> = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(url, { headers });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`Directus ${res.status}: ${txt}`);
+        }
 
         const data = await res.json();
-        const filename = data?.data?.video?.filename_disk;
 
+        // Video
+        const filename: string | undefined = data?.data?.video?.filename_disk;
         if (filename) {
-          setVideoUrl(
-            `${import.meta.env.VITE_DIRECTUS_URL}/assets/${filename}`
-          );
+          // If you’re using a token for assets too, append it here:
+          const assetUrl = `${base}/assets/${filename}${token ? `?access_token=${token}` : ""}`;
+          setVideoUrl(assetUrl);
         }
+
+        // Overlay
+        const color = data?.data?.overlay_color ?? "#000000";
+        const raw = data?.data?.overlay_opacity; // may be number or "0.30000"
+        const parsed = typeof raw === "number" ? raw : parseFloat(raw ?? "0.35");
+
+        setOverlayColor(color);
+        setOverlayOpacity(clamp01(Number.isFinite(parsed) ? parsed : 0.35));
       } catch (err) {
-        console.error("Failed to fetch hero video:", err);
+        console.error("Failed to fetch hero data:", err);
+        setOverlayColor("#000000");
+        setOverlayOpacity(0.35);
       }
     };
 
     fetchHeroVideo();
   }, []);
+
   return (
     <section
       className="relative w-full h-screen bg-black text-white overflow-hidden z-0"
       data-theme="dark"
       style={{ marginTop: 0, paddingTop: 0, top: 0 }}
     >
-      {/* Audio element */}
+      {/* Audio */}
       <audio ref={soundRef} src="/sfx/pop.mp3" preload="auto" />
 
-      {/* Background Video (now dynamic) */}
+      {/* Background Video */}
       {videoUrl && (
         <video
           autoPlay
@@ -98,7 +127,16 @@ const Hero = () => {
         </video>
       )}
 
-      {/* "Welcome to" flipping letters */}
+      {/* Tint Overlay (debug via ?overlayTest) */}
+      <div
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{
+          background: isDebug ? debugColor : overlayColor,
+          opacity: isDebug ? debugOpacity : overlayOpacity,
+        }}
+      />
+
+      {/* "Welcome to" */}
       <AnimatePresence>
         {showWelcome && (
           <motion.div
@@ -107,12 +145,7 @@ const Hero = () => {
             animate="visible"
             exit={{ opacity: 0 }}
             variants={{
-              visible: {
-                transition: {
-                  staggerChildren: 0.04,
-                  delayChildren: 0.1,
-                },
-              },
+              visible: { transition: { staggerChildren: 0.04, delayChildren: 0.1 } },
             }}
           >
             {"Welcome to".split("").map((char, i) => (
@@ -135,7 +168,7 @@ const Hero = () => {
         )}
       </AnimatePresence>
 
-      {/* GAMOOLA - rainbow wobble */}
+      {/* GAMOOLA */}
       {showGamoola && (
         <motion.div
           initial={{ opacity: 0, scale: 0, rotate: 720 }}
@@ -152,23 +185,10 @@ const Hero = () => {
               onMouseEnter={playSound}
               variants={{
                 hover: {
-                  color: [
-                    "#ff0000",
-                    "#ffa500",
-                    "#ffff00",
-                    "#00ff00",
-                    "#0000ff",
-                    "#4b0082",
-                    "#ee82ee",
-                  ],
+                  color: ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#ee82ee"],
                   scale: [1, 1.4, 0.8, 1.2, 1],
                   rotate: [-8, 8, -4, 4, 0],
-                  transition: {
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatType: "loop",
-                    ease: "easeInOut",
-                  },
+                  transition: { duration: 2, repeat: Infinity, repeatType: "loop", ease: "easeInOut" },
                 },
               }}
               className="text-[10vw] font-extrabold leading-[1.1] whitespace-nowrap text-white"

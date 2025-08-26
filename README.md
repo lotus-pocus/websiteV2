@@ -52,3 +52,83 @@ export default tseslint.config({
   },
 })
 ```
+
+```
+websiteV2
+├─ directus
+│  ├─ data
+│  └─ extensions
+│     └─ hooks
+│        └─ file-routing.js
+├─ directus.config.cjs
+├─ docker-compose.yml
+├─ eslint.config.js
+├─ index.html
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ cursor
+│  │  ├─ handDefault.png
+│  │  └─ handHover.png
+│  ├─ flowers
+│  │  ├─ bee.png
+│  │  ├─ blueflower.png
+│  │  ├─ butterfly.png
+│  │  ├─ leaves.png
+│  │  ├─ pinkflower.png
+│  │  ├─ redflower.png
+│  │  └─ yellowflower.png
+│  ├─ games
+│  │  ├─ alien.png
+│  │  ├─ android.png
+│  │  ├─ controller.png
+│  │  ├─ heart.png
+│  │  ├─ joystick.png
+│  │  ├─ star.png
+│  │  └─ vr.png
+│  ├─ gamoola.png
+│  └─ vite.svg
+├─ README.md
+├─ src
+│  ├─ api
+│  │  └─ directus.ts
+│  ├─ App.tsx
+│  ├─ assets
+│  │  ├─ burger.svg
+│  │  └─ react.svg
+│  ├─ components
+│  │  ├─ About.tsx
+│  │  ├─ CustomCursor.tsx
+│  │  ├─ data
+│  │  │  ├─ hero.ts
+│  │  │  └─ services.ts
+│  │  ├─ FlowerTrail.tsx
+│  │  ├─ GameTrail.tsx
+│  │  ├─ Hero.tsx
+│  │  ├─ Layout.tsx
+│  │  ├─ MobileMenu.tsx
+│  │  ├─ ScrollPrompt.tsx
+│  │  ├─ Section.tsx
+│  │  ├─ ServiceCard.tsx
+│  │  ├─ ServicesGrid.tsx
+│  │  └─ StudioIntro.tsx
+│  ├─ directusClient.ts
+│  ├─ index.css
+│  ├─ main.tsx
+│  ├─ pages
+│  │  ├─ About.tsx
+│  │  ├─ Contact.tsx
+│  │  ├─ Home.tsx
+│  │  ├─ Labs.tsx
+│  │  └─ Work.tsx
+│  ├─ types
+│  │  └─ directus.d.ts
+│  └─ vite-env.d.ts
+├─ tailwind.config.js
+├─ tsconfig.app.json
+├─ tsconfig.json
+├─ tsconfig.node.json
+└─ vite.config.ts
+
+```

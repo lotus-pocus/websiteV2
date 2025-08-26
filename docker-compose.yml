@@ -10,6 +10,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+    ports:
+      - "5432:5432"
+
   directus:
     image: directus/directus:latest
     container_name: directus_app
@@ -38,6 +41,7 @@ services:
       STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
       STORAGE_S3_REGION: ${STORAGE_S3_REGION}
       STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
-
+    volumes:
+      - ./directus/snapshots:/directus/snapshots  # ✅ Add this line
 volumes:
   pgdata:

@@ -4,7 +4,8 @@ import Layout from "../components/Layout";
 import About from "../components/About";
 import Section from "../components/Section";
 // import GameTrail from "../components/GameTrail";
-import ServicesGrid from "../components/ServicesGrid";
+// import ServicesGrid from "../components/ServicesGrid";
+import HorizontalScroll from "../components/HorizontalScroll";
 import StudioIntro from "../components/StudioIntro";
 
 const Home: React.FC = () => {
@@ -24,16 +25,16 @@ const Home: React.FC = () => {
         <Hero />
       </Section>
 
-      <Section theme="light" paddingClass="pb-0">
+      <Section theme="dark" paddingClass="pb-0">
         <About />
       </Section>
 
-      <Section theme="light" paddingClass="pt-4 pb-20" id="services">
-        <ServicesGrid />
+      <Section theme="dark" paddingClass="pt-4 pb-20" id="services">
+        <HorizontalScroll />
       </Section>
 
       {/* Add more sections here as needed */}
-      <Section theme="light">
+      <Section theme="dark">
         <StudioIntro />
         <div className="text-center text-gray-400 py-40">
           [ More content coming soon ]

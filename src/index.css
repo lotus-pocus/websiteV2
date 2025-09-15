@@ -45,3 +45,14 @@ html, body {
   background-size: 4px 4px; /* adjust density */
   mix-blend-mode: multiply; /* try overlay/soft-light too */
 }
+
+/* Hide scrollbar for Chrome, Safari, Edge */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}

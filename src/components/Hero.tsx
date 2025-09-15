@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import DotOverlay from "./DotOverlay";
 
 const Hero = () => {
   // --- Overlay state ---
@@ -19,6 +20,7 @@ const Hero = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const soundRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const playSound = () => {
     if (soundRef.current) {
@@ -27,7 +29,7 @@ const Hero = () => {
     }
   };
 
-  // Unlock audio after first user interaction
+  // --- Unlock audio after first user interaction ---
   useEffect(() => {
     const unlockAudio = () => {
       if (soundRef.current) {
@@ -49,6 +51,50 @@ const Hero = () => {
     return () => window.removeEventListener("pointerdown", unlockAudio);
   }, []);
 
+  // --- Unlock + resume video ---
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Unlock video on first user action
+    const unlock = () => {
+      video.muted = true; // required for autoplay
+      video.play().catch(() => {});
+    };
+
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+
+    // Resume when scrolled back into view
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            video.play().catch(() => {});
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(video);
+
+    // Extra safety: auto-resume if browser pauses it
+    const handlePause = () => {
+      if (document.body.contains(video)) {
+        video.play().catch(() => {});
+      }
+    };
+    video.addEventListener("pause", handlePause);
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      observer.disconnect();
+      video.removeEventListener("pause", handlePause);
+    };
+  }, []);
+
+  // --- Timed text transitions ---
   useEffect(() => {
     const t1 = setTimeout(() => setShowWelcome(false), 1200);
     const t2 = setTimeout(() => setShowGamoola(true), 1400);
@@ -58,7 +104,7 @@ const Hero = () => {
     };
   }, []);
 
-  // Fetch hero video + overlay from Directus
+  // --- Fetch hero video + overlay from Directus ---
   useEffect(() => {
     const fetchHeroVideo = async () => {
       try {
@@ -83,15 +129,17 @@ const Hero = () => {
         // Video
         const filename: string | undefined = data?.data?.video?.filename_disk;
         if (filename) {
-          // If you’re using a token for assets too, append it here:
-          const assetUrl = `${base}/assets/${filename}${token ? `?access_token=${token}` : ""}`;
+          const assetUrl = `${base}/assets/${filename}${
+            token ? `?access_token=${token}` : ""
+          }`;
           setVideoUrl(assetUrl);
         }
 
         // Overlay
         const color = data?.data?.overlay_color ?? "#000000";
-        const raw = data?.data?.overlay_opacity; // may be number or "0.30000"
-        const parsed = typeof raw === "number" ? raw : parseFloat(raw ?? "0.35");
+        const raw = data?.data?.overlay_opacity;
+        const parsed =
+          typeof raw === "number" ? raw : parseFloat(raw ?? "0.35");
 
         setOverlayColor(color);
         setOverlayOpacity(clamp01(Number.isFinite(parsed) ? parsed : 0.35));
@@ -117,19 +165,30 @@ const Hero = () => {
       {/* Background Video */}
       {videoUrl && (
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
-          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+          className="absolute top-0 left-0 w-full h-full object-cover z-0
+                     saturate-150 contrast-125 brightness-110"
         >
           <source src={videoUrl} type="video/mp4" />
         </video>
       )}
 
-      {/* Tint Overlay (debug via ?overlayTest) */}
+      {/* Dot pattern overlay (LED look) */}
+      <DotOverlay />
+
+      {/* Coloured overlay (richness / hyper-real) */}
       <div
-        className="absolute inset-0 z-10 pointer-events-none"
+        className="absolute inset-0 z-20 pointer-events-none mix-blend-overlay"
+        style={{ background: "#ff00ff", opacity: 0.2 }}
+      />
+
+      {/* Tint Overlay from Directus */}
+      <div
+        className="absolute inset-0 z-30 pointer-events-none"
         style={{
           background: isDebug ? debugColor : overlayColor,
           opacity: isDebug ? debugOpacity : overlayOpacity,
@@ -145,7 +204,9 @@ const Hero = () => {
             animate="visible"
             exit={{ opacity: 0 }}
             variants={{
-              visible: { transition: { staggerChildren: 0.04, delayChildren: 0.1 } },
+              visible: {
+                transition: { staggerChildren: 0.04, delayChildren: 0.1 },
+              },
             }}
           >
             {"Welcome to".split("").map((char, i) => (
@@ -185,10 +246,23 @@ const Hero = () => {
               onMouseEnter={playSound}
               variants={{
                 hover: {
-                  color: ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#ee82ee"],
+                  color: [
+                    "#ff0000",
+                    "#ffa500",
+                    "#ffff00",
+                    "#00ff00",
+                    "#0000ff",
+                    "#4b0082",
+                    "#ee82ee",
+                  ],
                   scale: [1, 1.4, 0.8, 1.2, 1],
                   rotate: [-8, 8, -4, 4, 0],
-                  transition: { duration: 2, repeat: Infinity, repeatType: "loop", ease: "easeInOut" },
+                  transition: {
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatType: "loop",
+                    ease: "easeInOut",
+                  },
                 },
               }}
               className="text-[10vw] font-extrabold leading-[1.1] whitespace-nowrap text-white"

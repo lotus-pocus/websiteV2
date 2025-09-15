@@ -40,3 +40,8 @@ html, body {
 
 }
 
+.dot-overlay {
+  background-image: radial-gradient(rgba(0,0,0,0.35) 30%, transparent 30%);
+  background-size: 4px 4px; /* adjust density */
+  mix-blend-mode: multiply; /* try overlay/soft-light too */
+}

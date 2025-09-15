@@ -24,21 +24,9 @@ const Home: React.FC = () => {
         <Hero />
       </Section>
 
-      <Section theme="light" paddingClass="pb-0">
-        <About />
-      </Section>
-
-      <Section theme="light" paddingClass="pt-4 pb-20" id="services">
-        <ServicesGrid />
-      </Section>
-
-      {/* Add more sections here as needed */}
-      <Section theme="light">
-        <StudioIntro />
-        <div className="text-center text-gray-400 py-40">
-          [ More content coming soon ]
-        </div>
-      </Section>
+      <About />
+      <ServicesGrid />
+      <StudioIntro />
 
       <Section theme="dark">
         <div className="text-center text-gray-400 py-40">

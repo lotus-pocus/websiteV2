@@ -1,10 +1,41 @@
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import Section from "./Section";
 
 const About = () => {
   const soundRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fetch the audio file and volume from Directus by name
+  const [copy, setCopy] = useState<string>("");
+  const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
+  const [textColor, setTextColor] = useState<string>("#000000");
+  const [highlightColor, setHighlightColor] = useState<string>("#ff0055");
+
+  // Fetch About content
+  useEffect(() => {
+    const fetchAbout = async () => {
+      try {
+        const base = import.meta.env.VITE_DIRECTUS_URL as string;
+        const res = await fetch(
+          `${base}/items/about_section?fields=copy,background_color,text_color,highlight_color`
+        );
+        const data = await res.json();
+        const record = data?.data?.[0];
+
+        if (record) {
+          setCopy(record.copy || "");
+          setBackgroundColor(record.background_color || "#ffffff");
+          setTextColor(record.text_color || "#000000");
+          setHighlightColor(record.highlight_color || "#ff0055");
+        }
+      } catch (err) {
+        console.error("Failed to fetch About section:", err);
+      }
+    };
+
+    fetchAbout();
+  }, []);
+
+  // Fetch sound
   useEffect(() => {
     const fetchSound = async () => {
       try {
@@ -15,18 +46,11 @@ const About = () => {
         const data = await res.json();
         const record = data?.data?.[0];
         const fileId = record?.file?.id;
-        const volume = record?.volume ?? 1.0; // fallback to full volume
+        const volume = record?.volume ?? 1.0;
 
         if (fileId && soundRef.current) {
           soundRef.current.src = `${base}/assets/${fileId}`;
-          // Clamp volume to [0.0, 1.0]
           soundRef.current.volume = Math.max(0, Math.min(volume, 1.0));
-          console.log(
-            "Loaded Ga Mooo La sound:",
-            soundRef.current.src,
-            "Volume:",
-            soundRef.current.volume
-          );
         }
       } catch (err) {
         console.error("Failed to fetch Ga Mooo La sound:", err);
@@ -36,7 +60,7 @@ const About = () => {
     fetchSound();
   }, []);
 
-  // Unlock audio on first click/tap
+  // Unlock audio
   useEffect(() => {
     const unlock = () => {
       if (soundRef.current) {
@@ -45,9 +69,8 @@ const About = () => {
           .then(() => {
             soundRef.current?.pause();
             soundRef.current.currentTime = 0;
-            console.log("Audio unlocked ✅");
           })
-          .catch((err) => console.warn("Unlock failed:", err));
+          .catch(() => {});
       }
       window.removeEventListener("click", unlock);
     };
@@ -55,33 +78,37 @@ const About = () => {
     return () => window.removeEventListener("click", unlock);
   }, []);
 
-  // Play sound on hover
   const playSound = () => {
     if (soundRef.current) {
       soundRef.current.currentTime = 0;
-      soundRef.current
-        .play()
-        .then(() => console.log("Sound playing!"))
-        .catch((err) => console.error("Play failed:", err));
+      soundRef.current.play().catch(() => {});
     }
   };
 
   return (
-    <section className="bg-white text-black px-8 py-20 text-xl leading-relaxed">
-      <div className="max-w-3xl mx-auto">
-        {/* Audio element will be populated dynamically */}
+    <Section
+      id="about"
+      paddingClass="px-8 py-20 text-xl leading-relaxed"
+      backgroundColor={backgroundColor}
+      textColor={textColor}
+    >
+      <div className="max-w-3xl mx-auto prose max-w-none">
         <audio ref={soundRef} preload="auto" />
 
         <p className="mb-6">
           <strong className="text-3xl block">
             hi, we're{" "}
             <span
-              style={{ fontFamily: "'Alfa Slab One', cursive", color: "#ff0055" }}
+              style={{
+                fontFamily: "'Alfa Slab One', cursive",
+                color: highlightColor,
+              }}
               className="text-5xl"
             >
               Gamoola
             </span>
           </strong>
+          <br />
           (we say it{" "}
           <em className="inline-block">
             {"ga_mooo_la".split("").map((char, i) => (
@@ -92,13 +119,13 @@ const About = () => {
                   y: 0,
                   opacity: 1,
                   scale: 1.2,
-                  color: "#000",
+                  color: highlightColor,
                 }}
                 whileHover={{
                   y: -10,
                   scale: 1.5,
                   rotate: -5,
-                  color: "#ff0055",
+                  color: highlightColor,
                 }}
                 transition={{
                   delay: i * 0.05,
@@ -116,26 +143,10 @@ const About = () => {
           – don’t ask),
         </p>
 
-        <p className="mb-6">
-          a creative, design, animation and tech studio in Portobello, west
-          London.
-          <br />
-          Crafting Immersive Experiences That Stick <br />
-          <strong>Interactive Experiences | VR | AR | WebGL</strong> <br />
-          We turn ideas into interactive realities... fast, flexible, and
-          beautifully built. <br />
-          [Let’s Build Together!]
-        </p>
-
-        <p>
-          have a look below at what we do and if you like it get in touch at{" "}
-          <a href="mailto:hello@gamoola.com" className="underline">
-            hello@gamoola.com
-          </a>
-          <br /> it would be great to chat.
-        </p>
+        {/* Directus WYSIWYG content */}
+        <div dangerouslySetInnerHTML={{ __html: copy }} />
       </div>
-    </section>
+    </Section>
   );
 };
 

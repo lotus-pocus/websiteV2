@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import ServiceCard from "./ServiceCard";
-import VideoModal from "./VideoModal"; // 👈 import it
+import VideoModal from "./VideoModal";
 
 type WorkExample = {
   id: number;
@@ -8,11 +9,19 @@ type WorkExample = {
   description: string;
   image: string;
   video?: string;
+  category?: string;
 };
+
+// helper to turn category into safe HTML id
+const slugify = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/\s+/g, "-") // spaces → dashes
+    .replace(/[^\w-]+/g, ""); // remove weird chars
 
 const ServicesGrid = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
-  const [activeVideo, setActiveVideo] = useState<string | null>(null); // 👈 NEW
+  const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -21,7 +30,7 @@ const ServicesGrid = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
         const res = await fetch(
-          `${base}/items/work_examples?fields=id,title,description,thumbnail.id,hover_video.id&sort=sort`
+          `${base}/items/work_examples?fields=id,title,description,thumbnail.id,hover_video.id,category&sort=sort`
         );
         const data = await res.json();
 
@@ -33,6 +42,7 @@ const ServicesGrid = () => {
           video: item.hover_video?.id
             ? `${base}/assets/${item.hover_video.id}`
             : undefined,
+          category: item.category,
         }));
 
         setExamples(mapped);
@@ -45,12 +55,16 @@ const ServicesGrid = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
         const res = await fetch(
-          `${base}/items/sound_effects?filter[name][_eq]=WazzupMan&fields=file.id`
+          `${base}/items/sound_effects?filter[name][_eq]=WazzupMan&fields=file.id,volume`
         );
         const data = await res.json();
-        const fileId = data?.data?.[0]?.file?.id;
+        const record = data?.data?.[0];
+        const fileId = record?.file?.id;
+        const volume = record?.volume ?? 1.0;
+
         if (fileId && audioRef.current) {
           audioRef.current.src = `${base}/assets/${fileId}`;
+          audioRef.current.volume = Math.max(0, Math.min(volume, 1.0));
         }
       } catch (err) {
         console.error("Failed to fetch scroll sound:", err);
@@ -61,18 +75,34 @@ const ServicesGrid = () => {
     fetchSound();
   }, []);
 
-  // Play sound when section scrolls into view
+  // unlock audio on first click
+  useEffect(() => {
+    const unlock = () => {
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .then(() => {
+            audioRef.current?.pause();
+            audioRef.current.currentTime = 0;
+          })
+          .catch(() => {});
+      }
+      window.removeEventListener("click", unlock);
+    };
+    window.addEventListener("click", unlock);
+    return () => window.removeEventListener("click", unlock);
+  }, []);
+
+  // play sound on scroll into view
   useEffect(() => {
     if (!sectionRef.current || !audioRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            audioRef.current!.currentTime = 0;
-            audioRef.current!.play().catch((err) => {
-              console.warn("Audio play failed:", err);
-            });
+          if (entry.isIntersecting && audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(() => {});
           }
         });
       },
@@ -92,7 +122,6 @@ const ServicesGrid = () => {
       id="work"
       className="py-20 px-6 bg-black text-white"
     >
-      {/* Audio element populated dynamically from Directus */}
       <audio ref={audioRef} preload="auto" />
 
       <div className="max-w-5xl mx-auto text-center mb-10">
@@ -105,18 +134,30 @@ const ServicesGrid = () => {
 
       <div className="grid gap-8 grid-cols-1 sm:grid-cols-2">
         {examples.map((ex) => (
-          <div key={ex.id} onClick={() => ex.video && setActiveVideo(ex.video)}>
-            <ServiceCard
-              title={ex.title}
-              description={ex.description}
-              image={ex.image}
-              video={ex.video}
-            />
+          <div key={ex.id}>
+            {ex.category ? (
+              <Link to={`/work#${slugify(ex.category)}`}>
+                <ServiceCard
+                  title={ex.title}
+                  description={ex.description}
+                  image={ex.image}
+                  video={ex.video}
+                />
+              </Link>
+            ) : (
+              <div onClick={() => ex.video && setActiveVideo(ex.video)}>
+                <ServiceCard
+                  title={ex.title}
+                  description={ex.description}
+                  image={ex.image}
+                  video={ex.video}
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Fullscreen Video Modal */}
       <VideoModal src={activeVideo} onClose={() => setActiveVideo(null)} />
     </section>
   );

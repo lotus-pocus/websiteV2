@@ -12,12 +12,14 @@ type WorkExample = {
   category?: string;
 };
 
-// helper to turn category into safe HTML id
-const slugify = (str: string) =>
-  str
-    .toLowerCase()
-    .replace(/\s+/g, "-") // spaces → dashes
-    .replace(/[^\w-]+/g, ""); // remove weird chars
+type DirectusWorkExample = {
+  id: number;
+  title: string;
+  description: string;
+  thumbnail?: { id: string };
+  hover_video?: { id: string };
+  category?: string;
+};
 
 const ServicesGrid = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
@@ -34,16 +36,20 @@ const ServicesGrid = () => {
         );
         const data = await res.json();
 
-        const mapped: WorkExample[] = data.data.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          image: item.thumbnail?.id ? `${base}/assets/${item.thumbnail.id}` : "",
-          video: item.hover_video?.id
-            ? `${base}/assets/${item.hover_video.id}`
-            : undefined,
-          category: item.category,
-        }));
+        const mapped: WorkExample[] = data.data.map(
+          (item: DirectusWorkExample) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            image: item.thumbnail?.id
+              ? `${base}/assets/${item.thumbnail.id}`
+              : "",
+            video: item.hover_video?.id
+              ? `${base}/assets/${item.hover_video.id}`
+              : undefined,
+            category: item.category,
+          })
+        );
 
         setExamples(mapped);
       } catch (err) {
@@ -75,7 +81,7 @@ const ServicesGrid = () => {
     fetchSound();
   }, []);
 
-  // unlock audio on first click
+  // Unlock audio
   useEffect(() => {
     const unlock = () => {
       if (audioRef.current) {
@@ -93,28 +99,34 @@ const ServicesGrid = () => {
     return () => window.removeEventListener("click", unlock);
   }, []);
 
-  // play sound on scroll into view
+  // Play sound on scroll
   useEffect(() => {
-    if (!sectionRef.current || !audioRef.current) return;
+    const sectionEl = sectionRef.current; // ✅ copy ref value
+    const audioEl = audioRef.current;
+    if (!sectionEl || !audioEl) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && audioRef.current) {
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(() => {});
+          if (entry.isIntersecting && audioEl) {
+            audioEl.currentTime = 0;
+            audioEl.play().catch(() => {});
           }
         });
       },
       { threshold: 0.3 }
     );
 
-    observer.observe(sectionRef.current);
+    observer.observe(sectionEl);
 
     return () => {
-      if (sectionRef.current) observer.unobserve(sectionRef.current);
+      observer.unobserve(sectionEl); // ✅ safe cleanup
     };
   }, []);
+
+  // Helper: turn category into kebab-case id (e.g. "VR Experiences" → "vr-experiences")
+  const toKebabCase = (str: string) =>
+    str.toLowerCase().replace(/\s+/g, "-");
 
   return (
     <section
@@ -136,7 +148,7 @@ const ServicesGrid = () => {
         {examples.map((ex) => (
           <div key={ex.id}>
             {ex.category ? (
-              <Link to={`/work#${slugify(ex.category)}`}>
+              <Link to={`/work#${toKebabCase(ex.category)}`}>
                 <ServiceCard
                   title={ex.title}
                   description={ex.description}

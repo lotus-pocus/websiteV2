@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ServiceCard from "./ServiceCard";
 import VideoModal from "./VideoModal";
 
@@ -21,11 +21,16 @@ type DirectusWorkExample = {
   category?: string;
 };
 
+// ✅ normalize category → kebab-case id
+const toKebabCase = (str: string) =>
+  str.toLowerCase().replace(/_/g, "-").replace(/\s+/g, "-");
+
 const ServicesGrid = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchExamples = async () => {
@@ -57,76 +62,14 @@ const ServicesGrid = () => {
       }
     };
 
-    const fetchSound = async () => {
-      try {
-        const base = import.meta.env.VITE_DIRECTUS_URL as string;
-        const res = await fetch(
-          `${base}/items/sound_effects?filter[name][_eq]=WazzupMan&fields=file.id,volume`
-        );
-        const data = await res.json();
-        const record = data?.data?.[0];
-        const fileId = record?.file?.id;
-        const volume = record?.volume ?? 1.0;
-
-        if (fileId && audioRef.current) {
-          audioRef.current.src = `${base}/assets/${fileId}`;
-          audioRef.current.volume = Math.max(0, Math.min(volume, 1.0));
-        }
-      } catch (err) {
-        console.error("Failed to fetch scroll sound:", err);
-      }
-    };
-
     fetchExamples();
-    fetchSound();
   }, []);
 
-  // Unlock audio
-  useEffect(() => {
-    const unlock = () => {
-      if (audioRef.current) {
-        audioRef.current
-          .play()
-          .then(() => {
-            audioRef.current?.pause();
-            audioRef.current.currentTime = 0;
-          })
-          .catch(() => {});
-      }
-      window.removeEventListener("click", unlock);
-    };
-    window.addEventListener("click", unlock);
-    return () => window.removeEventListener("click", unlock);
-  }, []);
-
-  // Play sound on scroll
-  useEffect(() => {
-    const sectionEl = sectionRef.current; // ✅ copy ref value
-    const audioEl = audioRef.current;
-    if (!sectionEl || !audioEl) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && audioEl) {
-            audioEl.currentTime = 0;
-            audioEl.play().catch(() => {});
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    observer.observe(sectionEl);
-
-    return () => {
-      observer.unobserve(sectionEl); // ✅ safe cleanup
-    };
-  }, []);
-
-  // Helper: turn category into kebab-case id (e.g. "VR Experiences" → "vr-experiences")
-  const toKebabCase = (str: string) =>
-    str.toLowerCase().replace(/\s+/g, "-");
+  // ✅ navigation only, scroll handled by ScrollToHash.tsx
+  const handleNavigate = (category: string) => {
+    const slug = toKebabCase(category);
+    navigate(`/work#${slug}`);
+  };
 
   return (
     <section
@@ -148,14 +91,14 @@ const ServicesGrid = () => {
         {examples.map((ex) => (
           <div key={ex.id}>
             {ex.category ? (
-              <Link to={`/work#${toKebabCase(ex.category)}`}>
+              <div onClick={() => handleNavigate(ex.category)}>
                 <ServiceCard
                   title={ex.title}
                   description={ex.description}
                   image={ex.image}
                   video={ex.video}
                 />
-              </Link>
+              </div>
             ) : (
               <div onClick={() => ex.video && setActiveVideo(ex.video)}>
                 <ServiceCard

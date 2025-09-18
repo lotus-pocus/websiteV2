@@ -45,6 +45,7 @@ html, body {
   background-size: 4px 4px; /* adjust density */
   mix-blend-mode: multiply; /* try overlay/soft-light too */
 }
-section {
-  scroll-margin-top: 100px; /* adjust to your header height */
+
+[id] {
+  scroll-margin-top: 80px; /* adjust for your header height */
 }

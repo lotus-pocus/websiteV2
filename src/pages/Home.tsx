@@ -6,6 +6,7 @@ import Section from "../components/Section";
 // import GameTrail from "../components/GameTrail";
 import ServicesGrid from "../components/ServicesGrid";
 import StudioIntro from "../components/StudioIntro";
+import ClientsGrid from "../components/ClientsGrid";
 
 const Home: React.FC = () => {
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -27,6 +28,7 @@ const Home: React.FC = () => {
       <About />
       <ServicesGrid />
       <StudioIntro />
+      <ClientsGrid/>
 
       <Section theme="dark">
         <div className="text-center text-gray-400 py-40">

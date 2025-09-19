@@ -91,6 +91,7 @@ const Work = () => {
       );
     }
 
+    // 🎥 Full-width video blocks
     if (block.type === "video" && block.media?.length) {
       return block.media.map((m, idx) => (
         <video
@@ -107,32 +108,68 @@ const Work = () => {
       ));
     }
 
-    if (block.type === "image" && block.media?.length) {
+    // 🖼️ / 🎥 Grid and single media handling
+    if (
+      (block.type === "image" || block.type === "video") &&
+      block.media?.length
+    ) {
       if (block.layout === "media-3-col") {
         return (
           <div
             key={block.id}
             className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10"
           >
-            {block.media.map((m, idx) => (
-              <img
-                key={`${block.id}-${idx}`}
-                src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
-                alt={m.directus_files_id.filename_download}
-                className="w-full rounded-lg shadow-md"
-              />
-            ))}
+            {block.media.map((m, idx) => {
+              const file = m.directus_files_id;
+              const isVideo = file.type?.startsWith("video");
+
+              return isVideo ? (
+                <video
+                  key={`${block.id}-${idx}`}
+                  src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${file.id}`}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full rounded-lg shadow-md"
+                />
+              ) : (
+                <img
+                  key={`${block.id}-${idx}`}
+                  src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${file.id}`}
+                  alt={file.filename_download}
+                  className="w-full rounded-lg shadow-md"
+                />
+              );
+            })}
           </div>
         );
       }
-      return block.media.map((m, idx) => (
-        <img
-          key={`${block.id}-${idx}`}
-          src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
-          alt={m.directus_files_id.filename_download}
-          className="mb-10 w-full rounded-lg shadow-md"
-        />
-      ));
+
+      // Default single media (non-grid)
+      return block.media.map((m, idx) => {
+        const file = m.directus_files_id;
+        const isVideo = file.type?.startsWith("video");
+
+        return isVideo ? (
+          <video
+            key={`${block.id}-${idx}`}
+            src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${file.id}`}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="mb-10 w-full rounded-lg shadow-md"
+          />
+        ) : (
+          <img
+            key={`${block.id}-${idx}`}
+            src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${file.id}`}
+            alt={file.filename_download}
+            className="mb-10 w-full rounded-lg shadow-md"
+          />
+        );
+      });
     }
 
     return null;
@@ -155,9 +192,8 @@ const Work = () => {
   // ✅ get blocks filtered by active tag
   const taggedBlocks = blocks.filter((block) => {
     const tags = block.work_example_id?.tags
-      ?.map(
-        (t) =>
-          (t.tags_id?.slug || toKebabCase(t.tags_id?.name)).toLowerCase()
+      ?.map((t) =>
+        (t.tags_id?.slug || toKebabCase(t.tags_id?.name)).toLowerCase()
       )
       .filter(Boolean);
     if (activeTag === "all") return true;

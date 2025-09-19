@@ -65,8 +65,9 @@ const ServicesGrid = () => {
     fetchExamples();
   }, []);
 
-  // ✅ navigation only, scroll handled by ScrollToHash.tsx
-  const handleNavigate = (category: string) => {
+  // ✅ safe navigation
+  const handleNavigate = (category?: string) => {
+    if (!category) return; // guard
     const slug = toKebabCase(category);
     navigate(`/work#${slug}`);
   };

@@ -40,3 +40,16 @@ public/hero.mp4
 # Optional: system files
 Thumbs.db
 Desktop.ini
+
+# --- Directus ---
+# Ignore runtime/cache/uploads but keep config & snapshots
+directus/uploads/
+directus/extensions/
+directus/cache/
+directus/database/
+directus/temp/
+
+# Allow snapshots
+!directus/snapshots/
+!directus/snapshots/*.yaml
+

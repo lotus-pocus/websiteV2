@@ -6,6 +6,8 @@ type RelatedCardProps = {
   thumbnail: string;
   hoverVideo?: string;
   link?: string;
+  hoverBg?: string;        // 👈 NEW
+  hoverTextColor?: string; // 👈 NEW
 };
 
 const RelatedCard = ({
@@ -14,6 +16,8 @@ const RelatedCard = ({
   thumbnail,
   hoverVideo,
   link,
+  hoverBg = "rgba(0,0,0,0.6)", // default fallback
+  hoverTextColor = "#ffffff",  // default fallback
 }: RelatedCardProps) => {
   const [hovered, setHovered] = useState(false);
 
@@ -23,6 +27,7 @@ const RelatedCard = ({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Thumbnail or hover video */}
       <div className="w-full h-full">
         {hoverVideo && hovered ? (
           <video
@@ -43,10 +48,28 @@ const RelatedCard = ({
         )}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-3">
-        <h3 className="text-lg font-bold">{title}</h3>
-        {description && <p className="text-sm">{description}</p>}
-      </div>
+      {/* Overlay */}
+      {hoverVideo ? (
+        // Only show overlay when hovered if video exists
+        hovered && (
+          <div
+            className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 transition"
+            style={{ backgroundColor: hoverBg, color: hoverTextColor }}
+          >
+            <h3 className="text-xl font-bold">{title}</h3>
+            {description && <p className="mt-2 text-sm">{description}</p>}
+          </div>
+        )
+      ) : (
+        // Always show overlay if there’s no video
+        <div
+          className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 transition"
+          style={{ backgroundColor: hoverBg, color: hoverTextColor }}
+        >
+          <h3 className="text-xl font-bold">{title}</h3>
+          {description && <p className="mt-2 text-sm">{description}</p>}
+        </div>
+      )}
     </div>
   );
 

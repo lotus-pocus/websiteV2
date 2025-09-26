@@ -10,8 +10,6 @@ import AboutPage from "./pages/AboutPage";
 import Contact from "./pages/Contact";
 
 import MobileMenu from "./components/MobileMenu";
-import ScrollToHash from "./components/ScrollToHash";
-import WorkRedirect from "./components/WorkRedirect";
 
 export default function App() {
   useEffect(() => {
@@ -23,21 +21,13 @@ export default function App() {
   return (
     <div className="relative isolation-isolate">
       <MobileMenu isDark={true} />
-      <ScrollToHash />
 
       <Routes>
+        {/* Homepage */}
         <Route path="/" element={<Home />} />
 
         {/* Work routes */}
-        <Route
-          path="/work"
-          element={
-            <>
-              <WorkRedirect />
-              <WorkOverview />
-            </>
-          }
-        />
+        <Route path="/work" element={<WorkOverview />} />
         <Route path="/work/:category" element={<WorkDetail />} />
 
         {/* Other pages */}

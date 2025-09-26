@@ -2,57 +2,82 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import parse from "html-react-parser";
-import VideoModal from "../components/VideoModal"; // 👈 import modal
+import VideoModal from "../components/VideoModal";
+import RelatedWork from "../components/work/RelatedWork";
 
-// Directus file type
 type DirectusFile = {
   id: string;
   filename_download: string;
   type: string;
 };
 
-// Work block type
+type Tag = {
+  id: number;
+  name: string;
+  slug?: string;
+};
+
 type WorkBlock = {
   id: number;
   type: "copy" | "video" | "image";
   copy?: string;
   layout?: string;
   media?: { directus_files_id: DirectusFile }[];
-  work_example_id?: { category?: string };
+  work_example_id?: { id?: number; category?: string };
 };
 
-// ✅ Slug helper to normalize titles consistently
-const toSlug = (str: string) =>
-  str
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "") // remove non-alphanumeric & symbols (like "/")
-    .replace(/\s+/g, "-")         // spaces → dash
-    .replace(/-+/g, "-");         // collapse multiple dashes
+type WorkExample = {
+  id: number;
+  title: string;
+  category?: string;
+  tags?: { tags_id: Tag }[];
+};
 
 const WorkDetail = () => {
   const { category } = useParams<{ category: string }>();
   const [blocks, setBlocks] = useState<WorkBlock[]>([]);
+  const [job, setJob] = useState<WorkExample | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBlocks = async () => {
+    const fetchData = async () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
-        const res = await fetch(
-          `${base}/items/work_blocks?fields=id,type,copy,layout,media.directus_files_id.*,work_example_id.category`
+
+        // 1. Fetch current project
+        const exRes = await fetch(
+          `${base}/items/work_examples?filter[category][_eq]=${category}&fields=id,title,category,tags.tags_id.*`
         );
-        const data = await res.json();
-        setBlocks(data.data);
+        const exData = await exRes.json();
+        const currentJob = exData.data?.[0];
+        setJob(currentJob);
+
+        // 2. Fetch blocks for this category
+        const blocksRes = await fetch(
+          `${base}/items/work_blocks?fields=id,type,copy,layout,media.directus_files_id.*,work_example_id.id,work_example_id.category`
+        );
+        const blocksData = await blocksRes.json();
+
+        // only keep blocks for this project’s category
+        const filtered = (blocksData.data || []).filter(
+          (b: WorkBlock) => b.work_example_id?.category === category
+        );
+
+        setBlocks(filtered);
+
+        console.log("WorkDetail category:", category);
+        console.log("WorkDetail job:", currentJob);
+        console.log("WorkDetail blocks:", filtered);
       } catch (err) {
-        console.error("Failed to fetch work blocks:", err);
+        console.error("Failed to fetch work detail data:", err);
       }
     };
 
-    fetchBlocks();
-  }, []);
+    fetchData();
+  }, [category]);
 
   const renderBlock = (block: WorkBlock) => {
-    // Copy blocks
+    // Copy block
     if (block.type === "copy" && block.copy) {
       return (
         <div key={block.id} className="prose max-w-none mb-10 text-white">
@@ -61,7 +86,7 @@ const WorkDetail = () => {
       );
     }
 
-    // Video blocks
+    // Video block(s)
     if (block.type === "video" && block.media?.length) {
       const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
@@ -81,7 +106,7 @@ const WorkDetail = () => {
                   loop
                   muted
                   playsInline
-                  onClick={() => setSelectedVideo(url)} // 👈 open modal
+                  onClick={() => setSelectedVideo(url)}
                   className="w-full h-auto rounded-lg shadow-lg object-contain cursor-pointer"
                 />
               );
@@ -108,7 +133,7 @@ const WorkDetail = () => {
       });
     }
 
-    // Image blocks
+    // Image block(s)
     if (block.type === "image" && block.media?.length) {
       if (block.layout === "media-3-col") {
         return (
@@ -142,12 +167,6 @@ const WorkDetail = () => {
     return null;
   };
 
-  // only keep blocks for the current category
-  const filtered = blocks.filter((b) => {
-    const cat = b.work_example_id?.category;
-    return cat && toSlug(cat) === category;
-  });
-
   return (
     <div className="min-h-screen bg-black text-white p-10">
       <Link to="/work" className="text-pink-400 underline mb-6 inline-block">
@@ -155,12 +174,20 @@ const WorkDetail = () => {
       </Link>
 
       <h1 className="text-3xl font-bold mb-8">
-        {category?.replace(/-/g, " ")}
+        {job?.title || category?.replace(/-/g, " ")}
       </h1>
 
-      {filtered.map((block) => renderBlock(block))}
+      {blocks.map((block) => renderBlock(block))}
 
-      {/* 👇 Modal mounts here */}
+      {/* Related Work */}
+      {job && (
+        <RelatedWork
+          currentId={job.id}
+          tags={job.tags?.map((t) => t.tags_id) || []}
+        />
+      )}
+
+      {/* Video Modal */}
       {selectedVideo && (
         <VideoModal src={selectedVideo} onClose={() => setSelectedVideo(null)} />
       )}

@@ -19,9 +19,10 @@ type DirectusWorkExample = {
   thumbnail?: { id: string };
   hover_video?: { id: string };
   category?: string;
+  featured?: boolean;
 };
 
-// ✅ normalize category → kebab-case id
+// ✅ normalize category → kebab-case
 const toKebabCase = (str: string) =>
   str.toLowerCase().replace(/_/g, "-").replace(/\s+/g, "-");
 
@@ -36,8 +37,10 @@ const ServicesGrid = () => {
     const fetchExamples = async () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
+
+        // only fetch featured = true
         const res = await fetch(
-          `${base}/items/work_examples?fields=id,title,description,thumbnail.id,hover_video.id,category&sort=sort`
+          `${base}/items/work_examples?filter[featured][_eq]=true&fields=id,title,description,thumbnail.id,hover_video.id,category,featured&sort=sort`
         );
         const data = await res.json();
 
@@ -65,11 +68,11 @@ const ServicesGrid = () => {
     fetchExamples();
   }, []);
 
-  // ✅ safe navigation
+  // ✅ safe navigation → go to /work/:category
   const handleNavigate = (category?: string) => {
-    if (!category) return; // guard
+    if (!category) return;
     const slug = toKebabCase(category);
-    navigate(`/work#${slug}`);
+    navigate(`/work/${slug}`);
   };
 
   return (

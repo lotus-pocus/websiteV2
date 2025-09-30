@@ -9,6 +9,7 @@ type RelatedCardProps = {
   link?: string;           // can be internal (#hash) or full external URL
   hoverBg?: string;
   hoverTextColor?: string;
+  onClick?: () => void;
 };
 
 const RelatedCard = ({
@@ -19,6 +20,7 @@ const RelatedCard = ({
   link,
   hoverBg = "rgba(0,0,0,0.6)",
   hoverTextColor = "#ffffff",
+  onClick,
 }: RelatedCardProps) => {
   const [hovered, setHovered] = useState(false);
 
@@ -27,6 +29,7 @@ const RelatedCard = ({
       className="group relative aspect-[16/9] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
     >
       {/* Thumbnail or hover video */}
       <div className="w-full h-full">
@@ -62,7 +65,7 @@ const RelatedCard = ({
   );
 
   // Decide: internal (react-router) vs external (plain <a>)
-  if (link) {
+  if (link && !onClick) {
     const isInternal = link.startsWith("/") || link.startsWith("#");
     return isInternal ? (
       <Link to={link}>{content}</Link>

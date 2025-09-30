@@ -16,6 +16,7 @@ export type WorkExample = {
   id: number;
   title: string;
   description?: string;
+  slug: string; // 👈 added
   category?: string;
   thumbnail?: { id: string };
   hover_video?: { id: string };
@@ -23,6 +24,8 @@ export type WorkExample = {
   hover_text_color?: string;
   tags?: { tags_id: Tag }[];
 };
+
+
 
 export type WorkBlock = {
   id: number;

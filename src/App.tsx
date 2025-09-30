@@ -28,7 +28,7 @@ export default function App() {
 
         {/* Work routes */}
         <Route path="/work" element={<WorkOverview />} />
-        <Route path="/work/:category" element={<WorkDetail />} />
+        <Route path="/work/:slug" element={<WorkDetail />} />
 
         {/* Other pages */}
         <Route path="/labs" element={<Labs />} />

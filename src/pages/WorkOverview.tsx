@@ -17,18 +17,12 @@ type WorkExample = {
   id: number;
   title: string;
   description: string;
+  slug: string;          // ✅ use slug instead of category
   category?: string | null;
   thumbnail?: DirectusFile;
   hover_video?: DirectusFile;
   tags?: { tags_id: Tag }[];
 };
-
-const toSlug = (str?: string | null) =>
-  (str || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
 
 const WorkOverview = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
@@ -44,7 +38,7 @@ const WorkOverview = () => {
 
         const url =
           `${base}/items/work_examples` +
-          `?fields=id,title,description,category,thumbnail.id,hover_video.id,tags.tags_id.*` +
+          `?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,tags.tags_id.*` +
           `&sort=-date_created`;
 
         const headers: Record<string, string> = token
@@ -151,12 +145,7 @@ const WorkOverview = () => {
             : undefined;
 
           return (
-            <Link
-              key={ex.id}
-              to={
-                ex.category ? `/work/${toSlug(ex.category)}` : "/work"
-              }
-            >
+            <Link key={ex.id} to={`/work/${ex.slug}`}>
               <RelatedCard
                 title={ex.title}
                 description={ex.description}

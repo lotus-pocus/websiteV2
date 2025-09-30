@@ -15,9 +15,9 @@ const Work = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // work_examples
+        // work_examples — include slug now
         const exRes = await fetch(
-          `${base}/items/work_examples?fields=id,title,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*`
+          `${base}/items/work_examples?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*`
         );
         const exData = await exRes.json();
         setExamples(Array.isArray(exData.data) ? exData.data : []);

@@ -18,7 +18,7 @@ services:
     container_name: directus_app
     restart: unless-stopped
     ports:
-      - 8055:8055
+      - 8056:8055
     depends_on:
       - postgres
     env_file:

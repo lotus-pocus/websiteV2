@@ -46,7 +46,7 @@ const WorkDetail = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // 1. Fetch current project by slug
+        // Fetch current project by slug
         const exRes = await fetch(
           `${base}/items/work_examples?filter[slug][_eq]=${slug}&fields=id,title,slug,tags.tags_id.*`
         );
@@ -54,19 +54,13 @@ const WorkDetail = () => {
         const currentJob: WorkExample | null = exData.data?.[0] || null;
         setJob(currentJob);
 
-        console.log("[DEBUG] Current job fetched:", currentJob);
+        if (!currentJob?.id) return;
 
-        if (!currentJob?.id) {
-          console.warn("[DEBUG] No job found for slug:", slug);
-          return;
-        }
-
-        // 2. Fetch blocks linked to this job by id
+        // Fetch blocks linked to this job
         const blocksRes = await fetch(
           `${base}/items/work_blocks?filter[work_example_id][_eq]=${currentJob.id}&fields=id,type,copy,layout,media.directus_files_id.*,work_example_id.id,work_example_id.slug,work_example_id.title`
         );
         const blocksData = await blocksRes.json();
-        console.log("[DEBUG] Blocks fetched for job:", blocksData);
         setBlocks(blocksData.data || []);
       } catch (err) {
         console.error("Failed to fetch work detail data:", err);
@@ -105,7 +99,7 @@ const WorkDetail = () => {
                   muted
                   playsInline
                   onClick={() => setSelectedVideo(url)}
-                  className="w-full h-auto rounded-lg shadow-lg object-contain cursor-pointer"
+                  className="w-full max-h-[80vh] rounded-lg shadow-lg object-contain cursor-pointer"
                 />
               );
             })}
@@ -124,7 +118,7 @@ const WorkDetail = () => {
             muted
             playsInline
             onClick={() => setSelectedVideo(url)}
-            className="mb-10 w-full rounded-lg shadow-lg object-contain cursor-pointer"
+            className="mb-10 w-full max-h-[80vh] rounded-lg shadow-lg object-contain cursor-pointer"
           />
         );
       });

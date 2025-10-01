@@ -1,13 +1,13 @@
 // src/components/ServiceCard.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 type ServiceCardProps = {
   title: string;
   description: string;
-  image: string;   // thumbnail / static image
-  video?: string;  // hover video
-  link?: string;   // internal (/work/:slug) or external (http...)
+  image: string;
+  video?: string;
+  link?: string;
 };
 
 const ServiceCard = ({
@@ -18,17 +18,36 @@ const ServiceCard = ({
   link,
 }: ServiceCardProps) => {
   const [hovered, setHovered] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  // ✅ Detect portrait images
+  useEffect(() => {
+    if (!image) return;
+    const img = new Image();
+    img.src = image;
+    img.onload = () => {
+      setIsPortrait(img.height > img.width);
+    };
+  }, [image]);
+
+  const mediaClass = isPortrait
+    ? "object-contain max-h-[400px] mx-auto" // 👈 portrait images/videos shrink & center
+    : "object-cover w-full h-full"; // 👈 landscape fills card
 
   const content = (
     <div
-      className="relative min-h-[400px] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer"
+      className={`
+        relative rounded-2xl overflow-hidden shadow-md 
+        transition-all duration-500 ease-in-out cursor-pointer
+        ${hovered ? "col-span-2 row-span-2 z-20" : "col-span-1 row-span-1"}
+      `}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       role="link"
       tabIndex={0}
     >
-      {/* Thumbnail or hover video */}
-      <div className="w-full h-full">
+      {/* Media */}
+      <div className="w-full h-full flex items-center justify-center bg-black">
         {video && hovered ? (
           <video
             src={video}
@@ -36,39 +55,42 @@ const ServiceCard = ({
             loop
             muted
             playsInline
-            crossOrigin="anonymous"
-            className="w-full h-full object-cover"
-          >
-            <source src={video} type="video/mp4" />
-          </video>
+            className={`${mediaClass} rounded-2xl transition-all duration-500 ease-in-out`}
+          />
         ) : (
           <img
             src={image}
             alt={title}
-            className="w-full h-full object-cover"
+            className={`${mediaClass} rounded-2xl transition-all duration-500 ease-in-out`}
             loading="lazy"
           />
         )}
       </div>
 
-      {/* Overlay content */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 bg-black bg-opacity-60 text-white p-4">
+      {/* Overlay - slides in from left */}
+      <div
+        className={`
+          absolute bottom-0 left-0 right-0 p-4 
+          transition-all duration-700 transform
+          ${hovered ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}
+          bg-black/60 text-white rounded-b-2xl
+        `}
+      >
         <h3 className="text-xl font-bold">{title}</h3>
         <p>{description}</p>
       </div>
     </div>
   );
 
-  // ✅ Handle link routing
+  // Routing
   if (link) {
-    if (link.startsWith("http")) {
-      return (
+    return link.startsWith("http")
+      ? (
         <a href={link} target="_blank" rel="noopener noreferrer">
           {content}
         </a>
-      );
-    }
-    return <Link to={link}>{content}</Link>;
+      )
+      : <Link to={link}>{content}</Link>;
   }
 
   return content;

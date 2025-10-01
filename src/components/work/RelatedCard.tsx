@@ -1,15 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 
-type RelatedCardProps = {
+export type RelatedCardProps = {
   title: string;
   description?: string;
   thumbnail: string;
   hoverVideo?: string;
-  link?: string;           // can be internal (#hash) or full external URL
+  link?: string;
   hoverBg?: string;
   hoverTextColor?: string;
-  onClick?: () => void;
 };
 
 const RelatedCard = ({
@@ -20,19 +19,40 @@ const RelatedCard = ({
   link,
   hoverBg = "rgba(0,0,0,0.6)",
   hoverTextColor = "#ffffff",
-  onClick,
 }: RelatedCardProps) => {
   const [hovered, setHovered] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
 
-  const content = (
+  // ✅ Detect aspect ratio only for images
+  useEffect(() => {
+    if (!thumbnail) return;
+    const img = new Image();
+    img.src = thumbnail;
+    img.onload = () => {
+      setIsPortrait(img.height > img.width);
+    };
+  }, [thumbnail]);
+
+  const mediaClass = useMemo(
+    () =>
+      isPortrait
+        ? "absolute inset-0 w-full h-full object-contain transition-transform duration-500 ease-in-out bg-black"
+        : "absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out",
+    [isPortrait]
+  );
+
+  const card = (
     <div
-      className="group relative aspect-[16/9] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer"
+      className="
+        relative rounded-xl overflow-hidden shadow-md 
+        transition-transform duration-500 ease-in-out 
+        cursor-pointer hover:scale-105
+      "
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={onClick}
     >
-      {/* Thumbnail or hover video */}
-      <div className="w-full h-full">
+      {/* Thumbnail / Hover Video */}
+      <div className="w-full aspect-video relative bg-black">
         {hoverVideo && hovered ? (
           <video
             src={hoverVideo}
@@ -40,43 +60,39 @@ const RelatedCard = ({
             loop
             muted
             playsInline
-            className="w-full h-full object-cover"
+            className={mediaClass}
           />
         ) : (
           <img
             src={thumbnail}
             alt={title}
-            className="w-full h-full object-cover"
+            className={mediaClass}
             loading="lazy"
           />
         )}
       </div>
 
-      {/* Overlay — hidden by default, shown on hover */}
+      {/* Overlay text, sliding from left */}
       <div
-        className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 
-                   opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ backgroundColor: hoverBg, color: hoverTextColor }}
+        className={`
+          absolute bottom-0 left-0 right-0 p-3 
+          transform transition-all duration-700 ease-in-out
+          ${hovered ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}
+        `}
+        style={{
+          background: hoverBg,
+          color: hoverTextColor,
+          borderBottomLeftRadius: "0.75rem",
+          borderBottomRightRadius: "0.75rem",
+        }}
       >
-        <h3 className="text-xl font-bold">{title}</h3>
-        {description && <p className="mt-2 text-sm">{description}</p>}
+        <h3 className="text-lg font-bold">{title}</h3>
+        {description && <p className="text-sm opacity-90">{description}</p>}
       </div>
     </div>
   );
 
-  // Decide: internal (react-router) vs external (plain <a>)
-  if (link && !onClick) {
-    const isInternal = link.startsWith("/") || link.startsWith("#");
-    return isInternal ? (
-      <Link to={link}>{content}</Link>
-    ) : (
-      <a href={link} target="_blank" rel="noopener noreferrer">
-        {content}
-      </a>
-    );
-  }
-
-  return content;
+  return link ? <Link to={link}>{card}</Link> : card;
 };
 
 export default RelatedCard;

@@ -1,30 +1,11 @@
 // src/components/work/RelatedWork.tsx
 import { useEffect, useState } from "react";
-import ServiceCard from "../ServiceCard"; // 👈 swapped in
-import { toKebabCase } from "../../utils/strings";
-
-type Tag = {
-  id: number;
-  name: string;
-  slug?: string;
-};
-
-type WorkExample = {
-  id: number;
-  title: string;
-  slug?: string;
-  description?: string;
-  category?: string;
-  thumbnail?: { id: string };
-  hover_video?: { id: string };
-  hover_background_color?: string;
-  hover_text_color?: string;
-  tags?: { tags_id: Tag }[];
-};
+import RelatedCard from "./RelatedCard";
+import type { WorkExample, Tag } from "../../types/work";
 
 type Props = {
-  currentId: number; // 👈 ID of the job currently being viewed
-  tags: Tag[];       // 👈 Tags from the current job
+  currentId: number;
+  tags: Tag[];
 };
 
 const RelatedWork = ({ currentId, tags }: Props) => {
@@ -32,57 +13,60 @@ const RelatedWork = ({ currentId, tags }: Props) => {
 
   useEffect(() => {
     const fetchRelated = async () => {
-      if (!tags || tags.length === 0) return;
+      try {
+        const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-      const base = import.meta.env.VITE_DIRECTUS_URL as string;
+        // filter by tags (or categories, depending on your schema)
+        const tagIds = tags.map((t) => t.id).join(",");
+        const url =
+          `${base}/items/work_examples` +
+          `?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*` +
+          `&filter[tags][tags_id][id][_in]=${tagIds}`;
 
-      // Collect tag slugs for filter
-      const tagSlugs = tags.map((t) => t.slug || toKebabCase(t.name));
-      const query = encodeURIComponent(tagSlugs.join(","));
+        const res = await fetch(url);
+        const data = await res.json();
 
-      const res = await fetch(
-        `${base}/items/work_examples?filter[tags][tags_id][slug][_in]=${query}&fields=id,title,slug,description,thumbnail.id,hover_video.id,hover_background_color,hover_text_color`
-      );
+        // exclude the current project
+        const filtered = (data.data || []).filter(
+          (ex: WorkExample) => ex.id !== currentId
+        );
 
-      const data = await res.json();
-
-      // Exclude the current job
-      const filtered = (data.data || []).filter(
-        (ex: WorkExample) => ex.id !== currentId
-      );
-
-      setRelated(filtered);
+        setRelated(filtered);
+      } catch (err) {
+        console.error("Failed to fetch related work:", err);
+      }
     };
 
-    fetchRelated();
+    if (tags.length > 0) fetchRelated();
   }, [currentId, tags]);
 
-  if (related.length === 0) return null;
+  if (!related || related.length === 0) return null;
 
   return (
-    <section className="mt-20">
-      <h2 className="text-2xl font-bold mb-6">Related Work</h2>
+    <div className="mt-10">
+      <h3 className="text-2xl font-bold mb-6">Related Work</h3>
       <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {related.map((ex) => (
-          <ServiceCard
+          <RelatedCard
             key={ex.id}
-            title={ex.title}
+            title={ex.title || "[Untitled Project]"}
             description={ex.description || ""}
-            image={
+            thumbnail={
               ex.thumbnail
                 ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${ex.thumbnail.id}`
                 : ""
             }
-            video={
+            hoverVideo={
               ex.hover_video
                 ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${ex.hover_video.id}`
                 : undefined
             }
+            // ✅ always navigate by slug
             link={ex.slug ? `/work/${ex.slug}` : `/work/${ex.id}`}
           />
         ))}
       </div>
-    </section>
+    </div>
   );
 };
 

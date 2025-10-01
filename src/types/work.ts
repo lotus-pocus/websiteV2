@@ -15,15 +15,16 @@ export type Tag = {
 export type WorkExample = {
   id: number;
   title: string;
-  description?: string;
-  slug: string; // 👈 added
-  category?: string;
+  description: string;
+  slug: string;
+  category?: string | null;   // ✅ allow null here
   thumbnail?: { id: string };
   hover_video?: { id: string };
   hover_background_color?: string;
   hover_text_color?: string;
   tags?: { tags_id: Tag }[];
 };
+
 
 
 

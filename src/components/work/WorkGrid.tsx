@@ -1,12 +1,11 @@
 // src/components/work/WorkGrid.tsx
-import ServiceCard from "../ServiceCard"; // 👈 use ServiceCard instead of RelatedCard
+import RelatedCard from "./RelatedCard";
 import { toKebabCase } from "../../utils/strings";
 import type { WorkExample } from "../../types/work";
 
 type Props = {
   examples: WorkExample[];
   activeTag: string;
-  onSelect?: (example: WorkExample) => void;
 };
 
 const WorkGrid = ({ examples, activeTag }: Props) => {
@@ -37,21 +36,23 @@ const WorkGrid = ({ examples, activeTag }: Props) => {
   return (
     <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-20">
       {filtered.map((ex) => (
-        <ServiceCard
+        <RelatedCard
           key={ex.id}
           title={ex.title || "[Untitled Project]"}
           description={ex.description || ""}
-          image={
+          thumbnail={
             ex.thumbnail
               ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${ex.thumbnail.id}`
               : ""
           }
-          video={
+          hoverVideo={
             ex.hover_video
               ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${ex.hover_video.id}`
               : undefined
           }
-          // ✅ pass slug-based link
+          hoverBg={ex.hover_background_color || "rgba(0,0,0,0.6)"}
+          hoverTextColor={ex.hover_text_color || "#ffffff"}
+          // ✅ use slug for navigation
           link={ex.slug ? `/work/${ex.slug}` : `/work/${ex.id}`}
         />
       ))}

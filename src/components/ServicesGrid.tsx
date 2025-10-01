@@ -16,6 +16,7 @@ type DirectusWorkExample = {
   title: string;
   description: string;
   slug: string;
+  featured?: boolean; // ✅ featured toggle
   thumbnail?: { id: string };
   hover_video?: { id: string };
 };
@@ -28,9 +29,9 @@ const ServicesGrid = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // ✅ include slug in fields
+        // ✅ only fetch featured projects
         const res = await fetch(
-          `${base}/items/work_examples?fields=id,title,description,slug,thumbnail.id,hover_video.id&sort=sort`
+          `${base}/items/work_examples?fields=id,title,description,slug,thumbnail.id,hover_video.id,featured&filter[featured][_eq]=true&sort=sort`
         );
         const data = await res.json();
 
@@ -39,7 +40,7 @@ const ServicesGrid = () => {
             id: item.id,
             title: item.title,
             description: item.description,
-            slug: item.slug, // ✅ Directus slug
+            slug: item.slug,
             image: item.thumbnail?.id
               ? `${base}/assets/${item.thumbnail.id}`
               : "",

@@ -6,9 +6,10 @@ type WorkExample = {
   id: number;
   title: string;
   description: string;
-  slug: string; // ✅ use project slug
+  slug: string;
   image: string;
   video?: string;
+  category?: string;
 };
 
 type DirectusWorkExample = {
@@ -16,9 +17,13 @@ type DirectusWorkExample = {
   title: string;
   description: string;
   slug: string;
-  featured?: boolean; // ✅ featured toggle
+  featured?: boolean;
   thumbnail?: { id: string };
   hover_video?: { id: string };
+  // old static dropdown
+  category?: string;
+  // new relational field
+  category_rel?: { id: number; name: string; slug: string };
 };
 
 const ServicesGrid = () => {
@@ -29,9 +34,8 @@ const ServicesGrid = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // ✅ only fetch featured projects
         const res = await fetch(
-          `${base}/items/work_examples?fields=id,title,description,slug,thumbnail.id,hover_video.id,featured&filter[featured][_eq]=true&sort=sort`
+          `${base}/items/work_examples?fields=id,title,description,slug,thumbnail.id,hover_video.id,featured,category,category_rel.id,category_rel.name,category_rel.slug&filter[featured][_eq]=true&sort=sort`
         );
         const data = await res.json();
 
@@ -47,6 +51,8 @@ const ServicesGrid = () => {
             video: item.hover_video?.id
               ? `${base}/assets/${item.hover_video.id}`
               : undefined,
+            // 👇 prefer new relational field, fallback to old dropdown
+            category: item.category_rel?.name || item.category || "",
           })
         );
 
@@ -68,10 +74,10 @@ const ServicesGrid = () => {
             <ServiceCard
               key={ex.id}
               title={ex.title}
-              description={ex.description}
+              description={ex.category || ""} // 👈 will now show "VR Experiences"
               image={ex.image}
               video={ex.video}
-              link={`/work/${ex.slug}`} // ✅ navigate by slug
+              link={`/work/${ex.slug}`}
             />
           ))}
         </div>

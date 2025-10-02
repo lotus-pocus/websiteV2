@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Work from "./pages/Work";        // ⬅️ updated
 import WorkDetail from "./pages/WorkDetail";
 import Labs from "./pages/Labs";
+import LabDetail from "./pages/LabDetail";
 import AboutPage from "./pages/AboutPage";
 import Contact from "./pages/Contact";
 
@@ -29,6 +30,12 @@ export default function App() {
         {/* Work routes */}
         <Route path="/work" element={<Work />} />   {/* ⬅️ updated */}
         <Route path="/work/:slug" element={<WorkDetail />} />
+
+        {/*Labs routes */}
+        <Route path="/labs" element={<Labs />} />
+        <Route path="/labs/:id" element={<LabDetail />} />
+
+
 
         {/* Other pages */}
         <Route path="/labs" element={<Labs />} />

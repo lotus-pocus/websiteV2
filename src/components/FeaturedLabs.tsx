@@ -49,15 +49,15 @@ const Labs = () => {
   return (
     <div className="min-h-screen bg-black text-white p-10">
       {/* Header Block */}
-      <div className="flex items-center gap-4 mb-20">
+      <div className="flex items-center gap-8 mb-20">
         {header?.header_image && (
           <img
             src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${header.header_image.id}`}
             alt="Labs icon"
-            className="h-12 w-12 md:h-16 md:w-16 object-contain"
+            className="h-20 w-20 md:h-28 md:w-28 lg:h-40 lg:w-40 object-contain"
           />
         )}
-        <h1 className="text-5xl md:text-6xl font-bold">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold">
           {header?.title || "Labs"}
         </h1>
       </div>

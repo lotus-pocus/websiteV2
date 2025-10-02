@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 type ServiceCardProps = {
   title: string;
-  description: string;
+  description: string; // now used for category in homepage
   image: string;
   video?: string;
   link?: string;
@@ -76,8 +76,7 @@ const ServiceCard = ({
           bg-black/60 text-white rounded-b-2xl
         `}
       >
-        <h3 className="text-xl font-bold">{title}</h3>
-        <p>{description}</p>
+  <h3 className="text-xl font-bold">{description}</h3>
       </div>
     </div>
   );

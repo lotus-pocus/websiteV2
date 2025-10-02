@@ -8,6 +8,7 @@ const Work = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [activeTag, setActiveTag] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,19 +34,43 @@ const Work = () => {
     fetchData();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-black text-white p-10">
-      <h1 className="text-4xl font-bold mb-10">our work.</h1>
+  // ✅ Filter by search term
+  const searchedExamples = examples.filter((ex) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      ex.title?.toLowerCase().includes(term) ||
+      ex.description?.toLowerCase().includes(term) ||
+      ex.tags?.some((t) =>
+        t.tags_id?.name?.toLowerCase().includes(term)
+      )
+    );
+  });
 
-      {/* Filter bar */}
+  return (
+    <div className="min-h-screen bg-black text-white p-6 md:p-10">
+      {/* ✅ Title + Search inline, responsive */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 pr-16">
+        {/* 👈 pr-16 ensures nothing sits under the burger (right-6 + ~40px button) */}
+        <h1 className="text-3xl md:text-4xl font-bold">our work.</h1>
+
+        <input
+          type="text"
+          placeholder="Search projects..."
+          className="w-full md:w-80 lg:w-96 px-4 py-2 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {/* ✅ Tag Filter */}
       <WorkFilterBar
         allTags={allTags}
         activeTag={activeTag}
         setActiveTag={setActiveTag}
       />
 
-      {/* Grid */}
-      <WorkGrid examples={examples} activeTag={activeTag} />
+      {/* ✅ Grid (search + tag combined) */}
+      <WorkGrid examples={searchedExamples} activeTag={activeTag} />
     </div>
   );
 };

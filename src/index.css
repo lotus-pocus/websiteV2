@@ -2,8 +2,6 @@
 @import "tailwindcss";
 
 
-
-
 :root {
   background-color: #242424;
   color: rgba(255, 255, 255, 0.87);
@@ -27,8 +25,6 @@ html, body {
 }
 
 
-
-
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -48,4 +44,50 @@ html, body {
 
 [id] {
   scroll-margin-top: 80px; /* adjust for your header height */
+}
+/* Custom typography styles for Labs/Work prose */
+.prose-invert h1 {
+  font-size: 2.5rem;   /* ~text-5xl */
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.prose-invert h2 {
+  font-size: 2rem;     /* ~text-4xl */
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+
+.prose-invert h3 {
+  font-size: 1.5rem;   /* ~text-2xl */
+  font-weight: 600;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.prose-invert p {
+  font-size: 1rem;     /* ~text-base */
+  line-height: 1.75;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  color: #e5e7eb;      /* gray-200 */
+}
+
+.prose-invert a {
+  color: #f472b6;      /* pink-400 */
+  text-decoration: underline;
+}
+.prose-invert a:hover {
+  color: #f9a8d4;      /* pink-300 */
+}
+
+.prose-invert ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+}
+.prose-invert ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
 }

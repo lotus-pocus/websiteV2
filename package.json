@@ -13,6 +13,7 @@
     "@react-three/drei": "^10.2.0",
     "@react-three/fiber": "^9.1.2",
     "@studio-freight/lenis": "^1.0.42",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.10",
     "framer-motion": "^12.18.1",
     "gsap": "^3.13.0",

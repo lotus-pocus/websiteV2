@@ -6,41 +6,52 @@ type CursorProps = {
 };
 
 const CustomCursor = ({ position }: CursorProps) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [cursorType, setCursorType] = useState<"default" | "hover" | "burger">("default");
 
   useEffect(() => {
     const checkHover = () => {
       const hoveredElement = document.elementFromPoint(position.x, position.y);
       if (!hoveredElement) return;
 
-      const matches =
-        hoveredElement.closest(
-          "a, button, .cursor-hover, [data-cursor='hover'], [data-cursor='burger']"
-        ) !== null;
-
-      setIsHovered(matches);
+      if (hoveredElement.closest("[data-cursor='burger']")) {
+        setCursorType("burger");
+      } else if (
+        hoveredElement.closest("a, button, .cursor-hover, [data-cursor='hover']")
+      ) {
+        setCursorType("hover");
+      } else {
+        setCursorType("default");
+      }
     };
 
-    checkHover(); // Run once on mount
-    const interval = setInterval(checkHover, 50); // Poll every 50ms
-
+    checkHover(); // run once
+    const interval = setInterval(checkHover, 50); 
     return () => clearInterval(interval);
   }, [position]);
+
+  // Sizes for different states
+  const size = cursorType === "hover" || cursorType === "burger" ? 200 : 32;
+  const offset = size / 2;
+
+  // Colors
+  const bgColor =
+    cursorType === "burger"
+      ? "#ff00aa" // 👈 bright pink for contrast on burger
+      : "white";
 
   return (
     <motion.div
       className="pointer-events-none fixed top-0 left-0 z-[10000]"
       style={{
-        mixBlendMode: "difference",
+        mixBlendMode: "difference", // keep consistent
         borderRadius: "9999px",
-        backgroundColor: "white",
+        backgroundColor: bgColor,
       }}
       animate={{
-        width: isHovered ? 200 : 32,
-        height: isHovered ? 200 : 32,
-        x: position.x - (isHovered ? 100 : 16),
-        y: position.y - (isHovered ? 100 : 16),
-
+        width: size,
+        height: size,
+        x: position.x - offset,
+        y: position.y - offset,
         opacity: 1,
       }}
       transition={{

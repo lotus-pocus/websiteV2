@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export type RelatedCardProps = {
   title: string;
-  description?: string;
+  description?: React.ReactNode; 
   thumbnail: string;
   hoverVideo?: string;
   link?: string;

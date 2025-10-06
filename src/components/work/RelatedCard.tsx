@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export type RelatedCardProps = {
   title: string;
-  description?: React.ReactNode; 
+  description?: React.ReactNode;
   thumbnail: string;
   hoverVideo?: string;
   link?: string;
@@ -87,7 +87,11 @@ const RelatedCard = ({
         }}
       >
         <h3 className="text-lg font-bold">{title}</h3>
-        {description && <p className="text-sm opacity-90">{description}</p>}
+        {description && (
+          <div className="text-sm opacity-90 prose prose-invert">
+            {typeof description === "string" ? description : description}
+          </div>
+        )}
       </div>
     </div>
   );

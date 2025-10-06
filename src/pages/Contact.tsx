@@ -32,6 +32,7 @@ const Contact = () => {
       throw new Error("Failed");
     }
   } catch (err) {
+  console.error("Form submission failed:", err);
     setStatus("Something went wrong. Please try again.");
   }
 };

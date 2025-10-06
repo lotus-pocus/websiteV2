@@ -1,21 +1,22 @@
-
 @import "tailwindcss";
 
-
+/* Base theme colors */
 :root {
   background-color: #242424;
   color: rgba(255, 255, 255, 0.87);
 }
 
-a {
+/* ✅ Global link styles only for pages NOT using .no-global-link */
+body:not(.no-global-link) a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
-a:hover {
+body:not(.no-global-link) a:hover {
   color: #535bf2;
 }
 
+/* Remove the original generic `a {}` block */
 html, body {
   margin: 0;
   padding: 0;
@@ -24,63 +25,67 @@ html, body {
   scroll-behavior: smooth;
 }
 
-
+/* Light theme adjustments */
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
     background-color: #ffffff;
   }
-  a:hover {
+
+  /* Limit light-mode hover color to non-tailwind areas */
+  body:not(.no-global-link) a:hover {
     color: #747bff;
   }
-
 }
 
+/* Dot overlay utility */
 .dot-overlay {
-  background-image: radial-gradient(rgba(0,0,0,0.35) 30%, transparent 30%);
-  background-size: 4px 4px; /* adjust density */
-  mix-blend-mode: multiply; /* try overlay/soft-light too */
+  background-image: radial-gradient(rgba(0, 0, 0, 0.35) 30%, transparent 30%);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
 }
 
+/* Smooth anchor scroll offsets */
 [id] {
-  scroll-margin-top: 80px; /* adjust for your header height */
+  scroll-margin-top: 80px;
 }
-/* Custom typography styles for Labs/Work prose */
+
+/* ---------- Prose styles (labs/work text areas) ---------- */
 .prose-invert h1 {
-  font-size: 2.5rem;   /* ~text-5xl */
+  font-size: 2.5rem;
   font-weight: 800;
   color: white;
   margin-bottom: 1rem;
 }
 
 .prose-invert h2 {
-  font-size: 2rem;     /* ~text-4xl */
+  font-size: 2rem;
   font-weight: 700;
   color: white;
   margin-bottom: 0.75rem;
 }
 
 .prose-invert h3 {
-  font-size: 1.5rem;   /* ~text-2xl */
+  font-size: 1.5rem;
   font-weight: 600;
   color: white;
   margin-bottom: 0.5rem;
 }
 
 .prose-invert p {
-  font-size: 1rem;     /* ~text-base */
+  font-size: 1rem;
   line-height: 1.75;
   margin-top: 1rem;
   margin-bottom: 1rem;
-  color: #e5e7eb;      /* gray-200 */
+  color: #e5e7eb;
 }
 
 .prose-invert a {
-  color: #f472b6;      /* pink-400 */
+  color: #f472b6;
   text-decoration: underline;
 }
 .prose-invert a:hover {
-  color: #f9a8d4;      /* pink-300 */
+  color: #f9a8d4;
 }
 
 .prose-invert ul {

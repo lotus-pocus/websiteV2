@@ -6,8 +6,8 @@ const Layout = ({ children }: { children: ReactNode }) => {
   const [isDark, setIsDark] = useState(false);
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
 
+  // 👇 Detect section theme (light/dark)
   useEffect(() => {
-    // Intersection observer for theme toggling
     const observer = new IntersectionObserver(
       (entries) => {
         const topEntry = entries.find((entry) => entry.isIntersecting);
@@ -24,44 +24,15 @@ const Layout = ({ children }: { children: ReactNode }) => {
 
     return () => {
       sections.forEach((section) => observer.unobserve(section));
+      observer.disconnect();
     };
   }, []);
 
+  // 👇 Track mouse position for custom cursor
   useEffect(() => {
-    // Mouse position tracking
-    const move = (e: MouseEvent) => {
-      setCursor({ x: e.clientX, y: e.clientY });
-    };
+    const move = (e: MouseEvent) => setCursor({ x: e.clientX, y: e.clientY });
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
-  }, []);
-
-  useEffect(() => {
-    // 👇 Persistent watch for inputs in the DOM
-    const logInputs = () => {
-      const inputs = document.querySelectorAll("input");
-      console.log(`[DEBUG] Found ${inputs.length} input(s)`);
-      inputs.forEach((input, i) => {
-        if (!input.id && !input.name) {
-          console.warn(`[DEBUG MISSING ID/NAME ${i}]`, input.outerHTML);
-        } else {
-          console.log(`[DEBUG INPUT ${i}]`, {
-            id: input.id,
-            name: input.name,
-            outerHTML: input.outerHTML,
-          });
-        }
-      });
-    };
-
-    // Run immediately
-    logInputs();
-
-    // Watch for new nodes being added
-    const observer = new MutationObserver(logInputs);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
   }, []);
 
   return (

@@ -17,16 +17,14 @@ export type WorkExample = {
   title: string;
   description: string;
   slug: string;
-  category?: string | null;   // ✅ allow null here
+  category?: string | null; // ✅ allow null here
   thumbnail?: { id: string };
   hover_video?: { id: string };
   hover_background_color?: string;
   hover_text_color?: string;
   tags?: { tags_id: Tag }[];
+  gallery?: { id: string }[]; // ✅ NEW: many-to-many relationship to Directus files
 };
-
-
-
 
 export type WorkBlock = {
   id: number;

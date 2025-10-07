@@ -23,7 +23,7 @@ type AboutData = {
 
 export default function AboutPage() {
   const [about, setAbout] = useState<AboutData | null>(null);
-  const base = import.meta.env.VITE_DIRECTUS_URL;
+  const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
   /* ---------- Fetch Data from Directus ---------- */
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function AboutPage() {
           `${base}/items/about_page?fields=*,team_members.*,team_members.photo.id,team_members.photo.filename_download`
         );
         const data = await res.json();
-        setAbout(data.data[0]);
+        setAbout(data?.data?.[0] || null);
       } catch (error) {
         console.error("Error fetching About Page:", error);
       }
@@ -62,22 +62,35 @@ export default function AboutPage() {
         <AboutHeaderGame />
 
         {/* Dynamic Intro Section (from Directus) */}
-        <section className="p-10 max-w-3xl mx-auto text-lg leading-relaxed text-center">
+        <section className="relative p-10 max-w-3xl mx-auto text-lg leading-relaxed text-center">
+          {/* Optional scanline overlay */}
+          <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:100%_3px] pointer-events-none" />
+
           {about.title && (
-            <h1 className="text-4xl sm:text-5xl font-['Sixtyfour'] mb-4 text-pink-400 drop-shadow-[0_0_10px_#ff00ff]">
+            <h1 className="relative z-10 text-4xl sm:text-5xl font-['Sixtyfour'] mb-6 text-pink-400 drop-shadow-[0_0_10px_#ff00ff]">
               {about.title}
             </h1>
           )}
 
           {about.intro_text && (
             <p
-              className="mb-4 text-gray-300"
+              className="
+                relative z-10
+                text-[#00ffcc]
+                font-['VT323']
+                text-[1.4rem]
+                sm:text-[1.6rem]
+                leading-[1.6]
+                tracking-wider
+                [text-shadow:0_0_6px_#00ffcc]
+                animate-[flicker_1.5s_infinite_steps(2,start)]
+              "
               dangerouslySetInnerHTML={{ __html: about.intro_text }}
             />
           )}
 
           {/* Glowing hardcoded email (keep this only) */}
-          <address className="not-italic mt-4">
+          <address className="not-italic mt-6 relative z-10">
             <a
               href="mailto:hello@gamoola.com"
               className="inline-block text-pink-400 underline decoration-pink-400 hover:text-white hover:decoration-white transition-colors duration-300 drop-shadow-[0_0_6px_#ff00ff]"

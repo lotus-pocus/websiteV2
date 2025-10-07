@@ -30,7 +30,9 @@ const LabDetail = () => {
     const fetchLabAndBlocks = async () => {
       try {
         // Fetch Lab project
-        const labRes = await fetch(`${DIRECTUS_BASE}/items/labs/${id}?fields=id,title`);
+        const labRes = await fetch(
+          `${DIRECTUS_BASE}/items/labs/${id}?fields=id,title`
+        );
         const labData = await labRes.json();
         setLab(labData?.data || null);
 
@@ -59,7 +61,7 @@ const LabDetail = () => {
       <div className="relative z-30 px-6 pt-6">
         <Link
           to="/labs"
-          className="inline-block px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
+          className="inline-block text-white font-semibold text-lg tracking-wide transition-all duration-300 hover:text-cyan-300 hover:drop-shadow-[0_0_6px_rgba(103,232,249,0.7)]"
         >
           ← Back to Labs
         </Link>
@@ -77,7 +79,11 @@ const LabDetail = () => {
         {blocks.length > 0 ? (
           blocks.map((block) => {
             // Banner Video (pulled up, behind wave)
-            if (block.type === "banner_video" && block.media && block.media.length > 0) {
+            if (
+              block.type === "banner_video" &&
+              block.media &&
+              block.media.length > 0
+            ) {
               return (
                 <div
                   key={block.id}
@@ -108,7 +114,11 @@ const LabDetail = () => {
             }
 
             // Single media block
-            if (block.type === "single_media" && block.media && block.media.length > 0) {
+            if (
+              block.type === "single_media" &&
+              block.media &&
+              block.media.length > 0
+            ) {
               return (
                 <div
                   key={block.id}
@@ -123,7 +133,11 @@ const LabDetail = () => {
             }
 
             // 2-column media block
-            if (block.type === "col_2" && block.media && block.media.length >= 2) {
+            if (
+              block.type === "col_2" &&
+              block.media &&
+              block.media.length >= 2
+            ) {
               return (
                 <div
                   key={block.id}

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import WorkFilterBar from "../components/work/WorkFilterBar";
 import WorkGrid from "../components/work/WorkGrid";
-import type { WorkExample, Tag } from ".././types/work";
+import type { WorkExample, Tag } from "../types/work";
 
 const Work = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
@@ -15,14 +15,15 @@ const Work = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // work_examples
+        // ✅ Fetch work examples (include gallery)
         const exRes = await fetch(
-          `${base}/items/work_examples?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*`
+          `${base}/items/work_examples?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,gallery.id,hover_background_color,hover_text_color,tags.tags_id.name,tags.tags_id.slug&sort=sort`
         );
         const exData = await exRes.json();
+        console.log("Fetched work examples:", exData.data); // ✅ optional debug
         setExamples(Array.isArray(exData.data) ? exData.data : []);
 
-        // tags
+        // ✅ Fetch tags
         const tagsRes = await fetch(`${base}/items/tags?fields=id,name,slug`);
         const tagsData = await tagsRes.json();
         setAllTags(Array.isArray(tagsData.data) ? tagsData.data : []);
@@ -40,9 +41,7 @@ const Work = () => {
     return (
       ex.title?.toLowerCase().includes(term) ||
       ex.description?.toLowerCase().includes(term) ||
-      ex.tags?.some((t) =>
-        t.tags_id?.name?.toLowerCase().includes(term)
-      )
+      ex.tags?.some((t) => t.tags_id?.name?.toLowerCase().includes(term))
     );
   });
 
@@ -50,7 +49,7 @@ const Work = () => {
     <div className="min-h-screen bg-black text-white p-6 md:p-10">
       {/* ✅ Title + Search inline, responsive */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 pr-16">
-        {/* 👈 pr-16 ensures nothing sits under the burger (right-6 + ~40px button) */}
+        {/* 👈 pr-16 ensures nothing sits under the burger */}
         <h1 className="text-3xl md:text-4xl font-bold">our work.</h1>
 
         <input

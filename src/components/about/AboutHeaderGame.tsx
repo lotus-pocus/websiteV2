@@ -1,6 +1,11 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
+import {
+  FontLoader,
+  type Font,
+} from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { Maximize2, Minimize2 } from "lucide-react";
 
 /* ---------- Particle burst ---------- */
@@ -15,7 +20,7 @@ class ParticleBurst {
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     const mat = new THREE.PointsMaterial({
       color,
-      size: 0.06,
+      size: 0.2,
       transparent: true,
       opacity: 1,
     });
@@ -24,7 +29,30 @@ class ParticleBurst {
   }
 }
 
-/* ---------- Game Scene ---------- */
+/* Small helper to fully dispose objects (avoid leaks) */
+function disposeObject3D(obj: THREE.Object3D) {
+  obj.traverse((child: THREE.Object3D) => {
+    const mesh = child as THREE.Mesh;
+    if (mesh.geometry) mesh.geometry.dispose();
+
+    const material = (mesh.material ?? null) as
+      | THREE.Material
+      | THREE.Material[]
+      | null;
+    if (material) {
+      if (Array.isArray(material)) material.forEach((m) => m.dispose());
+      else material.dispose();
+    }
+  });
+}
+
+interface GameLetter extends THREE.LineSegments {
+  health: number;
+  baseColor: number;
+  rotationSpeed: THREE.Vector3;
+}
+
+/* ---------- Game Scene (POLYGONAL WIREFRAME LETTERS) ---------- */
 function GameScene({
   scoreRef,
   onGameOver,
@@ -36,27 +64,29 @@ function GameScene({
 }: {
   scoreRef: React.MutableRefObject<number>;
   onGameOver: () => void;
-  startFlag: boolean;
+  startFlag: number;
   onReadyText: (t: string | null) => void;
   autoFire?: boolean;
   touchMove?: boolean;
   isFullscreen?: boolean;
 }) {
   const { camera } = useThree();
+  const perspectiveCamera = camera as THREE.PerspectiveCamera;
   const group = useRef<THREE.Group>(null);
   const player = useRef<THREE.Mesh>(null);
   const bullets = useRef<THREE.Mesh[]>([]);
-  const asteroids = useRef<THREE.Mesh[]>([]);
+  const objects = useRef<GameLetter[]>([]);
   const bursts = useRef<ParticleBurst[]>([]);
   const ready = useRef(true);
   const spawnTimer = useRef(0);
   const fireTimer = useRef(0);
   const gameOverTriggered = useRef(false);
+  const fontRef = useRef<Font | null>(null);
 
-  // Preload sounds
-  const shootSound = useRef<HTMLAudioElement>();
-  const hitSound = useRef<HTMLAudioElement>();
-  const gameOverSound = useRef<HTMLAudioElement>();
+  /* ---------- Sounds (fixed typing) ---------- */
+  const shootSound = useRef<HTMLAudioElement | null>(null);
+  const hitSound = useRef<HTMLAudioElement | null>(null);
+  const gameOverSound = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     shootSound.current = new Audio("/sfx/shoot.mp3");
@@ -64,7 +94,16 @@ function GameScene({
     gameOverSound.current = new Audio("/sfx/gameover.mp3");
   }, []);
 
-  /* READY→GO sequence */
+  /* ---------- Load font ---------- */
+  useEffect(() => {
+    const loader = new FontLoader();
+    loader.load(
+      "https://threejs.org/examples/fonts/helvetiker_regular.typeface.json",
+      (font) => (fontRef.current = font)
+    );
+  }, []);
+
+  /* ---------- READY → GO ---------- */
   useEffect(() => {
     gameOverTriggered.current = false;
     ready.current = true;
@@ -80,11 +119,13 @@ function GameScene({
     };
   }, [startFlag, onReadyText]);
 
+  /* ---------- Shooting ---------- */
   const shoot = () => {
     if (ready.current || !player.current || !group.current) return;
-    shootSound.current?.cloneNode(true).play();
+    const s = (shootSound.current?.cloneNode(true) as HTMLAudioElement) || null;
+    s?.play();
     const bullet = new THREE.Mesh(
-      new THREE.SphereGeometry(0.1, 6, 6),
+      new THREE.SphereGeometry(0.12, 10, 10),
       new THREE.MeshBasicMaterial({ color: 0xff0055 })
     );
     bullet.position.copy(player.current.position);
@@ -92,7 +133,7 @@ function GameScene({
     bullets.current.push(bullet);
   };
 
-  /* controls */
+  /* ---------- Controls ---------- */
   useEffect(() => {
     const touch = (e: TouchEvent) => {
       if (!touchMove) return;
@@ -102,8 +143,8 @@ function GameScene({
     const key = (e: KeyboardEvent) => {
       if ([" ", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
       if (!player.current) return;
-      if (e.key === "ArrowLeft") player.current.position.x -= 0.4;
-      if (e.key === "ArrowRight") player.current.position.x += 0.4;
+      if (e.key === "ArrowLeft") player.current.position.x -= 0.6;
+      if (e.key === "ArrowRight") player.current.position.x += 0.6;
       if (e.key === " ") shoot();
     };
     window.addEventListener("touchmove", touch);
@@ -114,7 +155,7 @@ function GameScene({
     };
   }, [touchMove]);
 
-  /* create player */
+  /* ---------- Player ---------- */
   useEffect(() => {
     if (!group.current) return;
     const ship = new THREE.Mesh(
@@ -126,55 +167,88 @@ function GameScene({
     player.current = ship;
   }, []);
 
-  /* frame loop */
+  /* ---------- Frame Loop ---------- */
   useFrame((_, delta) => {
     if (!group.current) return;
 
+    // Auto-fire
     if (autoFire && !ready.current) {
       fireTimer.current += delta;
-      if (fireTimer.current > 0.3) {
+      if (fireTimer.current > 0.28) {
         fireTimer.current = 0;
         shoot();
       }
     }
 
-    // Spawn asteroids
-    if (!ready.current) {
+    // Spawn polygonal wireframe GAMOOLA letters
+    if (!ready.current && fontRef.current) {
       spawnTimer.current += delta;
-      if (spawnTimer.current > 1) {
+      if (spawnTimer.current > 0.95) {
         spawnTimer.current = 0;
 
-        const vFOV = (camera.fov * Math.PI) / 180;
-        const height = 2 * Math.tan(vFOV / 2) * camera.position.z;
-        const widthFactor = isFullscreen ? 0.8 : 0.6;
-        const width = height * camera.aspect * widthFactor;
+        const widthFactor = isFullscreen ? 0.82 : 0.62;
+
+        const vFOV = (perspectiveCamera.fov * Math.PI) / 180;
+        const height = 2 * Math.tan(vFOV / 2) * perspectiveCamera.position.z;
+        const width = height * perspectiveCamera.aspect * widthFactor;
+
         const x = THREE.MathUtils.randFloatSpread(width);
 
-        const size = 0.3 + Math.random() * 0.5;
+        // Bigger to showcase polygons
+        const size = 0.5 + Math.random() * 0.5;
         let color = 0x00ccff;
         let health = 3;
-        if (size < 0.4) {
-          color = 0xff00ff;
+        if (size < 0.58) {
+          color = 0xff00ff; // small/pink
           health = 1;
-        } else if (size < 0.55) {
-          color = 0x00ff99;
+        } else if (size < 0.72) {
+          color = 0x00ff99; // medium/green
           health = 2;
         }
 
-        const a = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(size, 0),
-          new THREE.MeshBasicMaterial({
-            color,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.9,
-          })
+        const letters = "GAMOOLA";
+        const char = letters[Math.floor(Math.random() * letters.length)];
+
+        const textGeo = new TextGeometry(char, {
+          font: fontRef.current!,
+          size: size,
+          depth: 0.35, // extrusion helps silhouette + triangles
+          curveSegments: 4, // keep low for chunkier polys
+          bevelEnabled: false,
+        });
+        textGeo.center();
+
+        // Polygonal wireframe (triangulated look)
+        const wireGeo = new THREE.WireframeGeometry(textGeo);
+        const wireMat = new THREE.LineBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.95,
+          depthWrite: true, // keep depth writing to avoid "laser beams"
+          depthTest: true,
+        });
+
+        // LineSegments will show the triangulation edges (polygonal wireframe)
+        const letterObj = new THREE.LineSegments(
+          wireGeo,
+          wireMat
+        ) as unknown as GameLetter;
+
+        letterObj.health = health;
+        letterObj.baseColor = color;
+        letterObj.rotationSpeed = new THREE.Vector3(
+          Math.random() * 0.02,
+          Math.random() * 0.02,
+          Math.random() * 0.02
         );
-        a.position.set(x, 5 + Math.random() * 2, 0);
-        (a as any).health = health;
-        (a as any).baseColor = color;
-        group.current!.add(a);
-        asteroids.current.push(a);
+
+        letterObj.position.set(x, 5 + Math.random() * 2, 0);
+
+        // Free heavy text geometry (we only render wireframe)
+        textGeo.dispose();
+
+        group.current!.add(letterObj);
+        objects.current.push(letterObj);
       }
     }
 
@@ -183,15 +257,20 @@ function GameScene({
       b.position.y += 10 * delta;
       if (b.position.y > 6) {
         group.current!.remove(b);
+        disposeObject3D(b);
         return false;
       }
       return true;
     });
 
-    // Move asteroids
-    asteroids.current = asteroids.current.filter((a) => {
-      a.position.y -= 0.8 * delta;
-      if (a.position.y < -5 && !gameOverTriggered.current) {
+    // Move + rotate letters
+    objects.current = objects.current.filter((o) => {
+      o.position.y -= 0.8 * delta;
+      o.rotation.x += o.rotationSpeed.x;
+      o.rotation.y += o.rotationSpeed.y;
+      o.rotation.z += o.rotationSpeed.z;
+
+      if (o.position.y < -5 && !gameOverTriggered.current) {
         gameOverTriggered.current = true;
         gameOverSound.current?.play();
         onGameOver();
@@ -200,44 +279,73 @@ function GameScene({
       return true;
     });
 
-    // Bullet ↔ Asteroid
+    // 🔒 Clamp ship position to visible screen
+    if (player.current && camera instanceof THREE.PerspectiveCamera) {
+      const vFOV = (camera.fov * Math.PI) / 180;
+      const height = 2 * Math.tan(vFOV / 2) * camera.position.z;
+      const widthFactor = isFullscreen ? 0.8 : 0.6; // match spawn area factor
+      const width = height * camera.aspect * widthFactor;
+      const halfWidth = width / 2 - 0.5; // padding so ship never clips
+
+      player.current.position.x = THREE.MathUtils.clamp(
+        player.current.position.x,
+        -halfWidth,
+        halfWidth
+      );
+    }
+
+    // Bullet collisions
     for (let i = bullets.current.length - 1; i >= 0; i--) {
       const b = bullets.current[i];
-      for (let j = asteroids.current.length - 1; j >= 0; j--) {
-        const a = asteroids.current[j];
-        if (b.position.distanceTo(a.position) < 0.5) {
-          const data = a as any;
+      for (let j = objects.current.length - 1; j >= 0; j--) {
+        const o = objects.current[j];
+        // slightly larger radius since letters are bigger now
+        if (b.position.distanceTo(o.position) < 0.7) {
+          const data = o as GameLetter;
           data.health -= 1;
-          (a.material as THREE.MeshBasicMaterial).color.set(0xffffff);
-          setTimeout(() => {
-            (a.material as THREE.MeshBasicMaterial).color.set(data.baseColor);
-          }, 80);
-          hitSound.current?.cloneNode(true).play();
-          const burst = new ParticleBurst(a.position.clone(), data.baseColor);
+
+          // flash wireframe color on hit
+          const mat = (o as THREE.LineSegments)
+            .material as THREE.LineBasicMaterial;
+          const prev = mat.color.getHex();
+          mat.color.set(0xffffff);
+          setTimeout(() => mat.color.set(prev), 90);
+
+          (hitSound.current?.cloneNode(true) as HTMLAudioElement)?.play();
+
+          const burst = new ParticleBurst(o.position.clone(), data.baseColor);
           group.current!.add(burst.points);
           bursts.current.push(burst);
+
           group.current!.remove(b);
+          disposeObject3D(b);
           bullets.current.splice(i, 1);
+
           if (data.health <= 0) {
-            group.current!.remove(a);
-            asteroids.current.splice(j, 1);
+            group.current!.remove(o);
+            disposeObject3D(o);
+            objects.current.splice(j, 1);
             scoreRef.current += 100;
-          } else a.scale.multiplyScalar(0.9);
+          } else o.scale.multiplyScalar(0.9);
           break;
         }
       }
     }
 
-    // Ship ↔ Asteroid
+    // Player collision
     if (player.current && !gameOverTriggered.current) {
-      for (let j = 0; j < asteroids.current.length; j++) {
-        const a = asteroids.current[j];
-        if (player.current.position.distanceTo(a.position) < 0.6) {
+      for (let j = 0; j < objects.current.length; j++) {
+        const o = objects.current[j];
+        if (player.current.position.distanceTo(o.position) < 0.7) {
           gameOverTriggered.current = true;
-          const burst = new ParticleBurst(player.current.position.clone(), 0xff0055);
+          const burst = new ParticleBurst(
+            player.current.position.clone(),
+            0xff0055
+          );
           group.current.add(burst.points);
           bursts.current.push(burst);
           group.current.remove(player.current);
+          disposeObject3D(player.current);
           gameOverSound.current?.play();
           onGameOver();
           break;
@@ -252,12 +360,14 @@ function GameScene({
       b.points.position.y += delta * 0.5;
       if (b.life <= 0) {
         group.current!.remove(b.points);
+        disposeObject3D(b.points);
         return false;
       }
       return true;
     });
   });
 
+  // No special lights needed for wireframe (LineBasicMaterial is unlit)
   return <group ref={group} />;
 }
 
@@ -265,7 +375,9 @@ function GameScene({
 function ReadyOverlay({ text }: { text: string }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/40">
-      <h2 className="text-6xl sm:text-7xl font-['Sixtyfour'] text-white animate-pulse">{text}</h2>
+      <h2 className="text-6xl sm:text-7xl font-['Sixtyfour'] text-white animate-pulse">
+        {text}
+      </h2>
     </div>
   );
 }
@@ -290,15 +402,14 @@ function GameOverOverlay({ onRestart }: { onRestart: () => void }) {
 export default function AboutHeaderGame() {
   const [playing, setPlaying] = useState(false);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
   const [readyText, setReadyText] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const scoreRef = useRef(0);
   const gameContainerRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => setIsMobile(window.innerWidth < 768), []);
 
   // Score loop
@@ -321,10 +432,6 @@ export default function AboutHeaderGame() {
   };
 
   const restartGame = () => {
-    // Update high score if current score is greater
-    if (scoreRef.current > highScore) setHighScore(scoreRef.current);
-    scoreRef.current = 0;
-    setScore(0);
     setGameOver(false);
     setCanvasKey((k) => k + 1);
   };
@@ -349,8 +456,12 @@ export default function AboutHeaderGame() {
 
   return (
     <section className="relative w-full bg-black text-white overflow-hidden">
-      <link href="https://fonts.googleapis.com/css2?family=Sixtyfour&display=swap" rel="stylesheet" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Sixtyfour&display=swap"
+        rel="stylesheet"
+      />
 
+      {/* CRT Scanlines */}
       <div className="pointer-events-none absolute inset-0 z-0 opacity-[0.15] bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:100%_3px]" />
 
       <div
@@ -380,7 +491,8 @@ export default function AboutHeaderGame() {
           <>
             <Canvas key={canvasKey} camera={{ position: [0, 0, 8], fov: 75 }}>
               <color attach="background" args={["#000000"]} />
-              <ambientLight intensity={1} />
+              {/* No lights needed for wireframe, but harmless if kept */}
+              <ambientLight intensity={0.6} />
               <GameScene
                 scoreRef={scoreRef}
                 onGameOver={() => setGameOver(true)}
@@ -395,24 +507,25 @@ export default function AboutHeaderGame() {
             {readyText && <ReadyOverlay text={readyText} />}
             {gameOver && <GameOverOverlay onRestart={restartGame} />}
 
-            {/* SCORE + HIGH SCORE */}
-            <div className="absolute top-3 right-16 sm:right-20 z-10 font-['Sixtyfour'] text-xs sm:text-sm animate-pulse text-pink-500 drop-shadow-[0_0_5px_#ff00ff] flex gap-3">
+            {/* Score (top-right) */}
+            <div className="absolute top-3 right-16 sm:right-20 z-10 font-['Sixtyfour'] text-xs sm:text-sm text-pink-500 drop-shadow-[0_0_5px_#ff00ff]">
               <div className="bg-black/60 px-2 py-1 rounded border border-pink-400 shadow-[0_0_15px_#ff00ff]">
                 SCORE: {score}
               </div>
-              <div className="bg-black/60 px-2 py-1 rounded border border-cyan-400 shadow-[0_0_15px_#00ffff]">
-                HIGH: {highScore}
-              </div>
             </div>
 
-            {/* FULLSCREEN ICON - bottom-right */}
+            {/* Fullscreen toggle (bottom-right) */}
             <div className="absolute bottom-3 right-3 z-10 text-right">
               <button
                 onClick={toggleFullscreen}
                 className="p-1 bg-black/60 rounded border border-white hover:bg-white hover:text-black transition"
                 title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
               >
-                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isFullscreen ? (
+                  <Minimize2 size={14} />
+                ) : (
+                  <Maximize2 size={14} />
+                )}
               </button>
               {isFullscreen && (
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-400 font-['Sixtyfour'] opacity-70 text-right">
@@ -424,9 +537,8 @@ export default function AboutHeaderGame() {
         )}
       </div>
 
+      {/* Divider line */}
       <div className="w-full border-t border-white opacity-70" />
-
-      
     </section>
   );
 }

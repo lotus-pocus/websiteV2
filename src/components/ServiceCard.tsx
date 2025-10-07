@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 type ServiceCardProps = {
   title: string;
-  description: string; // now used for category in homepage
+  description: string;
   image: string;
   video?: string;
   link?: string;
@@ -19,55 +19,74 @@ const ServiceCard = ({
 }: ServiceCardProps) => {
   const [hovered, setHovered] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [keepVideo, setKeepVideo] = useState(false); // 👈 keep video briefly after hover
 
-  // ✅ Detect portrait images
+  // detect portrait images
   useEffect(() => {
     if (!image) return;
     const img = new Image();
     img.src = image;
-    img.onload = () => {
-      setIsPortrait(img.height > img.width);
-    };
+    img.onload = () => setIsPortrait(img.height > img.width);
   }, [image]);
 
   const mediaClass = isPortrait
-    ? "object-contain max-h-[400px] mx-auto" // 👈 portrait images/videos shrink & center
-    : "object-cover w-full h-full"; // 👈 landscape fills card
+    ? "object-contain max-h-[400px] mx-auto"
+    : "object-cover w-full h-full";
+
+  const handleMouseEnter = () => {
+    setHovered(true);
+    setKeepVideo(true);
+    setVideoLoaded(false);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+    // delay unmount to avoid black flash
+    setTimeout(() => setKeepVideo(false), 300);
+  };
 
   const content = (
     <div
       className={`
-        relative rounded-2xl overflow-hidden shadow-md 
+        relative rounded-2xl overflow-hidden shadow-md bg-black
         transition-all duration-500 ease-in-out cursor-pointer
-        ${hovered ? "col-span-2 row-span-2 z-20" : "col-span-1 row-span-1"}
+        ${hovered ? "scale-[1.02] z-20" : "scale-100"}
+        aspect-[4/3]
       `}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       role="link"
       tabIndex={0}
     >
-      {/* Media */}
-      <div className="w-full h-full flex items-center justify-center bg-black">
-        {video && hovered ? (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {/* Image always visible */}
+        <img
+          src={image}
+          alt={title}
+          className={`${mediaClass} rounded-2xl absolute inset-0 transition-opacity duration-500 ${
+            hovered && videoLoaded ? "opacity-0" : "opacity-100"
+          }`}
+          loading="lazy"
+        />
+
+        {/* Keep video visible slightly longer after hover */}
+        {video && keepVideo && (
           <video
             src={video}
             autoPlay
             loop
             muted
             playsInline
-            className={`${mediaClass} rounded-2xl transition-all duration-500 ease-in-out`}
-          />
-        ) : (
-          <img
-            src={image}
-            alt={title}
-            className={`${mediaClass} rounded-2xl transition-all duration-500 ease-in-out`}
-            loading="lazy"
+            onLoadedData={() => setVideoLoaded(true)}
+            className={`${mediaClass} rounded-2xl absolute inset-0 transition-opacity duration-500 ${
+              hovered && videoLoaded ? "opacity-100" : "opacity-0"
+            }`}
           />
         )}
       </div>
 
-      {/* Overlay - slides in from left */}
+      {/* Overlay text */}
       <div
         className={`
           absolute bottom-0 left-0 right-0 p-4 
@@ -76,20 +95,20 @@ const ServiceCard = ({
           bg-black/60 text-white rounded-b-2xl
         `}
       >
-  <h3 className="text-xl font-bold">{description}</h3>
+        <h3 className="text-xl font-bold">{description}</h3>
       </div>
     </div>
   );
 
-  // Routing
+  // routing logic
   if (link) {
-    return link.startsWith("http")
-      ? (
-        <a href={link} target="_blank" rel="noopener noreferrer">
-          {content}
-        </a>
-      )
-      : <Link to={link}>{content}</Link>;
+    return link.startsWith("http") ? (
+      <a href={link} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    ) : (
+      <Link to={link}>{content}</Link>
+    );
   }
 
   return content;

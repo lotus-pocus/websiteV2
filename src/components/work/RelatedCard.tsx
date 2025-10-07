@@ -1,3 +1,4 @@
+// src/components/work/RelatedCard.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 
@@ -9,6 +10,7 @@ export type RelatedCardProps = {
   link?: string;
   hoverBg?: string;
   hoverTextColor?: string;
+  gallery?: { id: string }[]; // ✅ added
 };
 
 const RelatedCard = ({
@@ -19,11 +21,13 @@ const RelatedCard = ({
   link,
   hoverBg = "rgba(0,0,0,0.6)",
   hoverTextColor = "#ffffff",
+  gallery = [],
 }: RelatedCardProps) => {
   const [hovered, setHovered] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // ✅ Detect aspect ratio only for images
+  // ✅ Detect aspect ratio
   useEffect(() => {
     if (!thumbnail) return;
     const img = new Image();
@@ -33,13 +37,30 @@ const RelatedCard = ({
     };
   }, [thumbnail]);
 
+  // ✅ Cycle through gallery images when hovered (if no video)
+  useEffect(() => {
+    if (!hovered || !gallery.length) return;
+
+    const interval = setInterval(() => {
+      setGalleryIndex((prev) => (prev + 1) % gallery.length);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [hovered, gallery]);
+
   const mediaClass = useMemo(
     () =>
       isPortrait
-        ? "absolute inset-0 w-full h-full object-contain transition-transform duration-500 ease-in-out bg-black"
-        : "absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-in-out",
+        ? "absolute inset-0 w-full h-full object-contain transition-opacity duration-700 ease-in-out bg-black"
+        : "absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-in-out",
     [isPortrait]
   );
+
+  // ✅ Decide what to show on hover
+  const currentImage =
+    gallery.length > 0
+      ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${gallery[galleryIndex].id}`
+      : thumbnail;
 
   const card = (
     <div
@@ -51,7 +72,7 @@ const RelatedCard = ({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Thumbnail / Hover Video */}
+      {/* Media section */}
       <div className="w-full aspect-video relative bg-black">
         {hoverVideo && hovered ? (
           <video
@@ -60,19 +81,22 @@ const RelatedCard = ({
             loop
             muted
             playsInline
+            preload="auto"
             className={mediaClass}
+            style={{ opacity: hovered ? 1 : 0 }}
           />
         ) : (
           <img
-            src={thumbnail}
+            src={currentImage}
             alt={title}
             className={mediaClass}
             loading="lazy"
+            style={{ opacity: hovered ? 1 : 0.95 }}
           />
         )}
       </div>
 
-      {/* Overlay text, sliding from left */}
+      {/* Overlay text */}
       <div
         className={`
           absolute bottom-0 left-0 right-0 p-3 
@@ -89,7 +113,7 @@ const RelatedCard = ({
         <h3 className="text-lg font-bold">{title}</h3>
         {description && (
           <div className="text-sm opacity-90 prose prose-invert">
-            {typeof description === "string" ? description : description}
+            {description}
           </div>
         )}
       </div>

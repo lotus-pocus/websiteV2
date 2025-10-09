@@ -2,10 +2,13 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Section from "./Section";
 
+const TYPING_SPEED = 20; // 🕐 milliseconds per character (increase for slower typing)
+
 const About = () => {
   const soundRef = useRef<HTMLAudioElement | null>(null);
 
-  const [copy, setCopy] = useState<string>("");
+  const [fullCopy, setFullCopy] = useState<string>("");
+  const [displayedCopy, setDisplayedCopy] = useState<string>("");
   const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
   const [textColor, setTextColor] = useState<string>("#000000");
   const [highlightColor, setHighlightColor] = useState<string>("#ff0055");
@@ -22,7 +25,7 @@ const About = () => {
         const record = data?.data?.[0];
 
         if (record) {
-          setCopy(record.copy || "");
+          setFullCopy(record.copy || "");
           setBackgroundColor(record.background_color || "#ffffff");
           setTextColor(record.text_color || "#000000");
           setHighlightColor(record.highlight_color || "#ff0055");
@@ -34,6 +37,21 @@ const About = () => {
 
     fetchAbout();
   }, []);
+
+  // ✍️ Typewriter effect for Directus copy
+  useEffect(() => {
+    if (!fullCopy) return;
+    setDisplayedCopy("");
+    let i = 0;
+
+    const interval = setInterval(() => {
+      setDisplayedCopy(fullCopy.slice(0, i));
+      i++;
+      if (i > fullCopy.length) clearInterval(interval);
+    }, TYPING_SPEED);
+
+    return () => clearInterval(interval);
+  }, [fullCopy]);
 
   // Fetch sound
   useEffect(() => {
@@ -92,16 +110,25 @@ const About = () => {
       backgroundColor={backgroundColor}
       textColor={textColor}
     >
-      <div className="max-w-3xl mx-auto prose max-w-none">
+      <div
+        className="max-w-3xl mx-auto prose max-w-none"
+        style={{ fontFamily: "'Roboto', sans-serif" }}
+      >
         <audio ref={soundRef} preload="auto" />
 
-        <p className="mb-6">
+        {/* Intro text - fades in before typing begins */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="mb-6"
+        >
           <strong className="text-3xl block">
             hi, we're{" "}
             <span
               style={{
-                fontFamily: "'Alfa Slab One', cursive",
                 color: highlightColor,
+                fontWeight: 700,
               }}
               className="text-5xl"
             >
@@ -133,7 +160,7 @@ const About = () => {
                   ease: "easeOut",
                 }}
                 viewport={{ once: false, amount: 0.5 }}
-                className="inline-block font-fun cursor-pointer"
+                className="inline-block cursor-pointer"
                 onMouseEnter={playSound}
               >
                 {char}
@@ -141,10 +168,26 @@ const About = () => {
             ))}
           </em>{" "}
           – don’t ask),
-        </p>
+        </motion.div>
 
-        {/* Directus WYSIWYG content */}
-        <div dangerouslySetInnerHTML={{ __html: copy }} />
+        {/* ✨ Typewriter effect for Directus copy */}
+        <div
+          className="whitespace-pre-wrap border-l-4 border-pink-500 pl-4 text-lg mt-8"
+          style={{
+            minHeight: "200px",
+            animation: "blink 1s infinite step-end alternate",
+          }}
+          dangerouslySetInnerHTML={{ __html: displayedCopy }}
+        />
+
+        {/* Optional blinking caret (CSS style below) */}
+        <style>
+          {`
+            @keyframes blink {
+              50% { border-color: transparent; }
+            }
+          `}
+        </style>
       </div>
     </Section>
   );

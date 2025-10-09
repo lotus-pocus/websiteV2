@@ -186,13 +186,17 @@ function GameScene({
       if (spawnTimer.current > 0.95) {
         spawnTimer.current = 0;
 
-        const widthFactor = isFullscreen ? 0.82 : 0.62;
-
+        // Use same width logic as ship clamp so letters spawn within reach
         const vFOV = (perspectiveCamera.fov * Math.PI) / 180;
         const height = 2 * Math.tan(vFOV / 2) * perspectiveCamera.position.z;
-        const width = height * perspectiveCamera.aspect * widthFactor;
 
-        const x = THREE.MathUtils.randFloatSpread(width);
+        // ✅ match the clamp range (same factor & padding)
+        const widthFactor = isFullscreen ? 0.8 : 0.6;
+        const width = height * perspectiveCamera.aspect * widthFactor;
+        const halfWidth = width / 2 - 0.5;
+
+        // Spawn within visible area where the ship can reach
+        const x = THREE.MathUtils.randFloat(-halfWidth, halfWidth);
 
         // Bigger to showcase polygons
         const size = 0.5 + Math.random() * 0.5;

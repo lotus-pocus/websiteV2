@@ -18,6 +18,7 @@ const Hero = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showGamoola, setShowGamoola] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
 
   const soundRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,7 +57,6 @@ const Hero = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Unlock video on first user action
     const unlock = () => {
       video.muted = true; // required for autoplay
       video.play().catch(() => {});
@@ -65,7 +65,6 @@ const Hero = () => {
     window.addEventListener("pointerdown", unlock);
     window.addEventListener("keydown", unlock);
 
-    // Resume when scrolled back into view
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -78,7 +77,6 @@ const Hero = () => {
     );
     observer.observe(video);
 
-    // Extra safety: auto-resume if browser pauses it
     const handlePause = () => {
       if (document.body.contains(video)) {
         video.play().catch(() => {});
@@ -92,6 +90,39 @@ const Hero = () => {
       observer.disconnect();
       video.removeEventListener("pause", handlePause);
     };
+  }, []);
+
+  // --- Retry video playback once fonts and layout are ready ---
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryPlay = () => {
+      video.muted = true;
+      video.play().catch(() => {});
+    };
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(tryPlay);
+    }
+
+    window.addEventListener("load", tryPlay);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") tryPlay();
+    });
+
+    return () => {
+      window.removeEventListener("load", tryPlay);
+    };
+  }, []);
+
+  // --- Fade-in once video starts playing ---
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPlay = () => setVideoReady(true);
+    video.addEventListener("playing", onPlay);
+    return () => video.removeEventListener("playing", onPlay);
   }, []);
 
   // --- Timed text transitions ---
@@ -126,7 +157,6 @@ const Hero = () => {
 
         const data = await res.json();
 
-        // Video
         const filename: string | undefined = data?.data?.video?.filename_disk;
         if (filename) {
           const assetUrl = `${base}/assets/${filename}${
@@ -135,7 +165,6 @@ const Hero = () => {
           setVideoUrl(assetUrl);
         }
 
-        // Overlay
         const color = data?.data?.overlay_color ?? "#000000";
         const raw = data?.data?.overlay_opacity;
         const parsed =
@@ -164,17 +193,21 @@ const Hero = () => {
 
       {/* Background Video */}
       {videoUrl && (
-        <video
+        <motion.video
           ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          onLoadedData={() => setVideoReady(true)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: videoReady ? 1 : 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
           className="absolute top-0 left-0 w-full h-full object-cover z-0
                      saturate-150 contrast-125 brightness-110"
         >
           <source src={videoUrl} type="video/mp4" />
-        </video>
+        </motion.video>
       )}
 
       {/* Dot pattern overlay (LED look) */}

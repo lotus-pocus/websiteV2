@@ -1,6 +1,6 @@
-// src/components/work/RelatedCard.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion"; // 👈 added
 
 export type RelatedCardProps = {
   title: string;
@@ -10,7 +10,8 @@ export type RelatedCardProps = {
   link?: string;
   hoverBg?: string;
   hoverTextColor?: string;
-  gallery?: { id: string }[]; // ✅ added
+  gallery?: { id: string }[];
+  index?: number; // 👈 optional, allows stagger timing later
 };
 
 const RelatedCard = ({
@@ -22,12 +23,13 @@ const RelatedCard = ({
   hoverBg = "rgba(0,0,0,0.6)",
   hoverTextColor = "#ffffff",
   gallery = [],
+  index = 0,
 }: RelatedCardProps) => {
   const [hovered, setHovered] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // ✅ Detect aspect ratio
+  /* ---------- Detect aspect ratio ---------- */
   useEffect(() => {
     if (!thumbnail) return;
     const img = new Image();
@@ -37,14 +39,12 @@ const RelatedCard = ({
     };
   }, [thumbnail]);
 
-  // ✅ Cycle through gallery images when hovered (if no video)
+  /* ---------- Cycle gallery ---------- */
   useEffect(() => {
     if (!hovered || !gallery.length) return;
-
     const interval = setInterval(() => {
       setGalleryIndex((prev) => (prev + 1) % gallery.length);
-    }, 2500);
-
+    }, 1500);
     return () => clearInterval(interval);
   }, [hovered, gallery]);
 
@@ -56,25 +56,43 @@ const RelatedCard = ({
     [isPortrait]
   );
 
-  // ✅ Decide what to show on hover
   const currentImage =
     gallery.length > 0
       ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${gallery[galleryIndex].id}`
       : thumbnail;
 
+  /* ---------- Card ---------- */
   const card = (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: index * 0.1, // 👈 slight stagger if multiple cards render
+      }}
+      viewport={{ once: true, amount: 0.2 }}
       className="
-        relative rounded-xl overflow-hidden shadow-md 
+        relative overflow-hidden shadow-md 
         transition-transform duration-500 ease-in-out 
-        cursor-pointer hover:scale-105
+        cursor-pointer hover:scale-[1.02]
       "
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Media section */}
-      <div className="w-full aspect-video relative bg-black">
-        {hoverVideo && hovered ? (
+      {/* Media Layer */}
+      <div className="relative w-full aspect-video bg-black">
+        {/* Base image — always visible */}
+        <img
+          src={currentImage}
+          alt={title}
+          className={`${mediaClass}`}
+          loading="lazy"
+          style={{ opacity: hovered ? 0 : 1 }}
+        />
+
+        {/* Hover video — preloaded, smoothly faded */}
+        {hoverVideo && (
           <video
             src={hoverVideo}
             autoPlay
@@ -82,16 +100,11 @@ const RelatedCard = ({
             muted
             playsInline
             preload="auto"
-            className={mediaClass}
-            style={{ opacity: hovered ? 1 : 0 }}
-          />
-        ) : (
-          <img
-            src={currentImage}
-            alt={title}
-            className={mediaClass}
-            loading="lazy"
-            style={{ opacity: hovered ? 1 : 0.95 }}
+            className={`${mediaClass}`}
+            style={{
+              opacity: hovered ? 1 : 0,
+              transition: "opacity 0.6s ease-in-out",
+            }}
           />
         )}
       </div>
@@ -99,25 +112,21 @@ const RelatedCard = ({
       {/* Overlay text */}
       <div
         className={`
-          absolute bottom-0 left-0 right-0 p-3 
+          absolute bottom-0 left-0 right-0 p-4 
           transform transition-all duration-700 ease-in-out
-          ${hovered ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}
+          ${hovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}
         `}
         style={{
           background: hoverBg,
           color: hoverTextColor,
-          borderBottomLeftRadius: "0.75rem",
-          borderBottomRightRadius: "0.75rem",
         }}
       >
-        <h3 className="text-lg font-bold">{title}</h3>
+        <h3 className="text-lg font-bold mb-1">{title}</h3>
         {description && (
-          <div className="text-sm opacity-90 prose prose-invert">
-            {description}
-          </div>
+          <div className="text-sm opacity-90 prose prose-invert">{description}</div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 
   return link ? <Link to={link}>{card}</Link> : card;

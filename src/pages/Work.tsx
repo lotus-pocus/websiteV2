@@ -15,13 +15,28 @@ const Work = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // ✅ Fetch work examples (include gallery)
+        // ✅ Fetch work examples (with gallery relationship)
         const exRes = await fetch(
-          `${base}/items/work_examples?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,gallery.id,hover_background_color,hover_text_color,tags.tags_id.name,tags.tags_id.slug&sort=sort`
+          `${base}/items/work_examples?fields=id,title,slug,description,category,
+          thumbnail.id,hover_video.id,hover_background_color,hover_text_color,
+          gallery.directus_files_id.id,
+          tags.tags_id.id,tags.tags_id.name,tags.tags_id.slug&sort=sort`
         );
         const exData = await exRes.json();
-        console.log("Fetched work examples:", exData.data); // ✅ optional debug
-        setExamples(Array.isArray(exData.data) ? exData.data : []);
+
+        // ✅ Normalise structure
+        const mapped = (exData.data || []).map((item: any) => ({
+          ...item,
+          thumbnail: item.thumbnail,
+          hover_video: item.hover_video,
+          gallery:
+            item.gallery?.map((g: any) => ({
+              id: g.directus_files_id.id,
+            })) || [],
+          tags: item.tags || [],
+        }));
+
+        setExamples(mapped);
 
         // ✅ Fetch tags
         const tagsRes = await fetch(`${base}/items/tags?fields=id,name,slug`);
@@ -41,7 +56,9 @@ const Work = () => {
     return (
       ex.title?.toLowerCase().includes(term) ||
       ex.description?.toLowerCase().includes(term) ||
-      ex.tags?.some((t) => t.tags_id?.name?.toLowerCase().includes(term))
+      ex.tags?.some((t: any) =>
+        t.tags_id?.name?.toLowerCase().includes(term)
+      )
     );
   });
 

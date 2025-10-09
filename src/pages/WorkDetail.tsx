@@ -1,6 +1,6 @@
-// src/pages/WorkDetail.tsx
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { motion } from "framer-motion"; // 👈 added
 import parse from "html-react-parser";
 import VideoModal from "../components/VideoModal";
 import RelatedWork from "../components/work/RelatedWork";
@@ -71,17 +71,23 @@ const WorkDetail = () => {
   }, [slug]);
 
   const renderBlock = (block: WorkBlock) => {
+    // ---------- COPY BLOCK ----------
     if (block.type === "copy" && block.copy) {
       return (
-        <div key={block.id} className="prose max-w-none mb-10 text-white">
+        <div
+          key={block.id}
+          className="max-w-6xl mx-auto px-10 pt-10 pb-12 prose prose-lg prose-invert"
+        >
           {parse(block.copy)}
         </div>
       );
     }
 
+    // ---------- VIDEO BLOCK ----------
     if (block.type === "video" && block.media?.length) {
       const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
+      // multi-column layout
       if (block.layout === "media-3-col") {
         return (
           <div
@@ -99,7 +105,7 @@ const WorkDetail = () => {
                   muted
                   playsInline
                   onClick={() => setSelectedVideo(url)}
-                  className="w-full max-h-[80vh] rounded-lg shadow-lg object-contain cursor-pointer"
+                  className="w-full shadow-lg object-contain cursor-pointer bg-black"
                 />
               );
             })}
@@ -107,24 +113,38 @@ const WorkDetail = () => {
         );
       }
 
+      // ---------- Full-width single video (banner style) ----------
       return block.media.map((m, idx) => {
         const url = `${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`;
         return (
-          <video
+          <div
             key={`${block.id}-${idx}`}
-            src={url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            onClick={() => setSelectedVideo(url)}
-            className="mb-10 w-full max-h-[80vh] rounded-lg shadow-lg object-contain cursor-pointer"
-          />
+            className="w-screen flex justify-center bg-black mb-16"
+            style={{
+              marginLeft: "50%",
+              transform: "translateX(-50%)",
+            }}
+          >
+            <video
+              src={url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onClick={() => setSelectedVideo(url)}
+              className="max-h-[95vh] w-auto object-contain cursor-pointer"
+              style={{
+                display: "block",
+              }}
+            />
+          </div>
         );
       });
     }
 
+    // ---------- IMAGE BLOCK ----------
     if (block.type === "image" && block.media?.length) {
+      // 3-column layout
       if (block.layout === "media-3-col") {
         return (
           <div
@@ -136,19 +156,20 @@ const WorkDetail = () => {
                 key={`${block.id}-${idx}`}
                 src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
                 alt={m.directus_files_id.filename_download}
-                className="w-full h-auto rounded-lg shadow-md object-cover"
+                className="w-full h-auto shadow-md object-cover"
               />
             ))}
           </div>
         );
       }
 
+      // single image
       return block.media.map((m, idx) => (
         <img
           key={`${block.id}-${idx}`}
           src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
           alt={m.directus_files_id.filename_download}
-          className="mb-10 w-full rounded-lg shadow-md object-cover"
+          className="mb-10 w-full shadow-md object-cover"
         />
       ));
     }
@@ -169,7 +190,44 @@ const WorkDetail = () => {
           <h1 className="text-3xl font-bold mb-8">{job.title}</h1>
           {blocks.map((block) => renderBlock(block))}
 
-          {/* Related Work */}
+          {/* --- Animated Related Work heading (replays on project change + scroll re-entry) --- */}
+          <motion.div
+            key={slug} // 👈 ensures re-mounts when a new project loads
+            className="overflow-hidden"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: false, amount: 0.2 }} // 👈 replays on scroll re-entry
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.06,
+                  delayChildren: 0.2,
+                },
+              },
+            }}
+          >
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-14 tracking-tight text-pink-400">
+              {"related work.".split("").map((char, i) => (
+                <motion.span
+                  key={i}
+                  variants={{
+                    hidden: { opacity: 0, y: 40 },
+                    visible: { opacity: 1, y: 0 },
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    ease: [0.25, 0.1, 0.25, 1],
+                  }}
+                  style={{ display: "inline-block" }}
+                >
+                  {char === " " ? "\u00A0" : char}
+                </motion.span>
+              ))}
+            </h2>
+          </motion.div>
+
+          {/* Related Work Section */}
           <RelatedWork
             currentId={job.id}
             tags={job.tags?.map((t) => t.tags_id) || []}
@@ -179,7 +237,10 @@ const WorkDetail = () => {
 
       {/* Video Modal */}
       {selectedVideo && (
-        <VideoModal src={selectedVideo} onClose={() => setSelectedVideo(null)} />
+        <VideoModal
+          src={selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+        />
       )}
     </div>
   );

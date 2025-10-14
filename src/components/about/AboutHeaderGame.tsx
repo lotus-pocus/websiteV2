@@ -46,13 +46,14 @@ function disposeObject3D(obj: THREE.Object3D) {
   });
 }
 
+/* ---------- Custom object type ---------- */
 interface GameLetter extends THREE.LineSegments {
   health: number;
   baseColor: number;
   rotationSpeed: THREE.Vector3;
 }
 
-/* ---------- Game Scene (POLYGONAL WIREFRAME LETTERS) ---------- */
+/* ---------- Game Scene ---------- */
 function GameScene({
   scoreRef,
   onGameOver,
@@ -83,7 +84,7 @@ function GameScene({
   const gameOverTriggered = useRef(false);
   const fontRef = useRef<Font | null>(null);
 
-  /* ---------- Sounds (fixed typing) ---------- */
+  /* ---------- Sounds ---------- */
   const shootSound = useRef<HTMLAudioElement | null>(null);
   const hitSound = useRef<HTMLAudioElement | null>(null);
   const gameOverSound = useRef<HTMLAudioElement | null>(null);
@@ -180,33 +181,27 @@ function GameScene({
       }
     }
 
-    // Spawn polygonal wireframe GAMOOLA letters
+    // Spawn letters
     if (!ready.current && fontRef.current) {
       spawnTimer.current += delta;
       if (spawnTimer.current > 0.95) {
         spawnTimer.current = 0;
 
-        // Use same width logic as ship clamp so letters spawn within reach
         const vFOV = (perspectiveCamera.fov * Math.PI) / 180;
         const height = 2 * Math.tan(vFOV / 2) * perspectiveCamera.position.z;
-
-        // ✅ match the clamp range (same factor & padding)
         const widthFactor = isFullscreen ? 0.8 : 0.6;
         const width = height * perspectiveCamera.aspect * widthFactor;
         const halfWidth = width / 2 - 0.5;
-
-        // Spawn within visible area where the ship can reach
         const x = THREE.MathUtils.randFloat(-halfWidth, halfWidth);
 
-        // Bigger to showcase polygons
         const size = 0.5 + Math.random() * 0.5;
         let color = 0x00ccff;
         let health = 3;
         if (size < 0.58) {
-          color = 0xff00ff; // small/pink
+          color = 0xff00ff;
           health = 1;
         } else if (size < 0.72) {
-          color = 0x00ff99; // medium/green
+          color = 0x00ff99;
           health = 2;
         }
 
@@ -216,23 +211,21 @@ function GameScene({
         const textGeo = new TextGeometry(char, {
           font: fontRef.current!,
           size: size,
-          depth: 0.35, // extrusion helps silhouette + triangles
-          curveSegments: 4, // keep low for chunkier polys
+          depth: 0.35,
+          curveSegments: 4,
           bevelEnabled: false,
         });
         textGeo.center();
 
-        // Polygonal wireframe (triangulated look)
         const wireGeo = new THREE.WireframeGeometry(textGeo);
         const wireMat = new THREE.LineBasicMaterial({
           color,
           transparent: true,
           opacity: 0.95,
-          depthWrite: true, // keep depth writing to avoid "laser beams"
+          depthWrite: true,
           depthTest: true,
         });
 
-        // LineSegments will show the triangulation edges (polygonal wireframe)
         const letterObj = new THREE.LineSegments(
           wireGeo,
           wireMat
@@ -247,8 +240,6 @@ function GameScene({
         );
 
         letterObj.position.set(x, 5 + Math.random() * 2, 0);
-
-        // Free heavy text geometry (we only render wireframe)
         textGeo.dispose();
 
         group.current!.add(letterObj);
@@ -283,13 +274,13 @@ function GameScene({
       return true;
     });
 
-    // 🔒 Clamp ship position to visible screen
+    // Clamp ship within visible area
     if (player.current && camera instanceof THREE.PerspectiveCamera) {
       const vFOV = (camera.fov * Math.PI) / 180;
       const height = 2 * Math.tan(vFOV / 2) * camera.position.z;
-      const widthFactor = isFullscreen ? 0.8 : 0.6; // match spawn area factor
+      const widthFactor = isFullscreen ? 0.8 : 0.6;
       const width = height * camera.aspect * widthFactor;
-      const halfWidth = width / 2 - 0.5; // padding so ship never clips
+      const halfWidth = width / 2 - 0.5;
 
       player.current.position.x = THREE.MathUtils.clamp(
         player.current.position.x,
@@ -303,12 +294,9 @@ function GameScene({
       const b = bullets.current[i];
       for (let j = objects.current.length - 1; j >= 0; j--) {
         const o = objects.current[j];
-        // slightly larger radius since letters are bigger now
         if (b.position.distanceTo(o.position) < 0.7) {
-          const data = o as GameLetter;
-          data.health -= 1;
+          o.health -= 1;
 
-          // flash wireframe color on hit
           const mat = (o as THREE.LineSegments)
             .material as THREE.LineBasicMaterial;
           const prev = mat.color.getHex();
@@ -317,7 +305,7 @@ function GameScene({
 
           (hitSound.current?.cloneNode(true) as HTMLAudioElement)?.play();
 
-          const burst = new ParticleBurst(o.position.clone(), data.baseColor);
+          const burst = new ParticleBurst(o.position.clone(), o.baseColor);
           group.current!.add(burst.points);
           bursts.current.push(burst);
 
@@ -325,7 +313,7 @@ function GameScene({
           disposeObject3D(b);
           bullets.current.splice(i, 1);
 
-          if (data.health <= 0) {
+          if (o.health <= 0) {
             group.current!.remove(o);
             disposeObject3D(o);
             objects.current.splice(j, 1);
@@ -371,7 +359,6 @@ function GameScene({
     });
   });
 
-  // No special lights needed for wireframe (LineBasicMaterial is unlit)
   return <group ref={group} />;
 }
 
@@ -406,6 +393,7 @@ function GameOverOverlay({ onRestart }: { onRestart: () => void }) {
 export default function AboutHeaderGame() {
   const [playing, setPlaying] = useState(false);
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
   const [readyText, setReadyText] = useState<string | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
@@ -415,6 +403,16 @@ export default function AboutHeaderGame() {
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => setIsMobile(window.innerWidth < 768), []);
+
+  // Load stored high score (optional persistence)
+  useEffect(() => {
+    const stored = localStorage.getItem("gamoolaHighScore");
+    if (stored) setHighScore(parseInt(stored));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("gamoolaHighScore", String(highScore));
+  }, [highScore]);
 
   // Score loop
   useEffect(() => {
@@ -436,6 +434,10 @@ export default function AboutHeaderGame() {
   };
 
   const restartGame = () => {
+    // update high score before resetting
+    if (scoreRef.current > highScore) setHighScore(scoreRef.current);
+    scoreRef.current = 0;
+    setScore(0);
     setGameOver(false);
     setCanvasKey((k) => k + 1);
   };
@@ -495,7 +497,6 @@ export default function AboutHeaderGame() {
           <>
             <Canvas key={canvasKey} camera={{ position: [0, 0, 8], fov: 75 }}>
               <color attach="background" args={["#000000"]} />
-              {/* No lights needed for wireframe, but harmless if kept */}
               <ambientLight intensity={0.6} />
               <GameScene
                 scoreRef={scoreRef}
@@ -511,25 +512,24 @@ export default function AboutHeaderGame() {
             {readyText && <ReadyOverlay text={readyText} />}
             {gameOver && <GameOverOverlay onRestart={restartGame} />}
 
-            {/* Score (top-right) */}
-            <div className="absolute top-3 right-16 sm:right-20 z-10 font-['Sixtyfour'] text-xs sm:text-sm text-pink-500 drop-shadow-[0_0_5px_#ff00ff]">
+            {/* SCORE + HIGH HUD */}
+            <div className="absolute top-3 right-16 sm:right-20 z-10 font-['Sixtyfour'] text-xs sm:text-sm animate-pulse text-pink-500 drop-shadow-[0_0_5px_#ff00ff] flex gap-3">
               <div className="bg-black/60 px-2 py-1 rounded border border-pink-400 shadow-[0_0_15px_#ff00ff]">
                 SCORE: {score}
               </div>
+              <div className="bg-black/60 px-2 py-1 rounded border border-cyan-400 shadow-[0_0_15px_#00ffff]">
+                HIGH: {highScore}
+              </div>
             </div>
 
-            {/* Fullscreen toggle (bottom-right) */}
+            {/* Fullscreen toggle */}
             <div className="absolute bottom-3 right-3 z-10 text-right">
               <button
                 onClick={toggleFullscreen}
                 className="p-1 bg-black/60 rounded border border-white hover:bg-white hover:text-black transition"
                 title={isFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen"}
               >
-                {isFullscreen ? (
-                  <Minimize2 size={14} />
-                ) : (
-                  <Maximize2 size={14} />
-                )}
+                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               </button>
               {isFullscreen && (
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-400 font-['Sixtyfour'] opacity-70 text-right">

@@ -73,6 +73,16 @@ const StudioIntro = () => {
       backgroundColor={backgroundColor}
       textColor={textColor}
     >
+      {/* 👇 Inline CSS to remove default <mark> highlight */}
+      <style>
+        {`
+          mark {
+            background: none !important;
+            color: inherit !important;
+          }
+        `}
+      </style>
+
       <div className="max-w-3xl mx-auto px-4 text-lg leading-relaxed">
         {copy
           ? parse(copy, {
@@ -82,10 +92,18 @@ const StudioIntro = () => {
                   const content = domToReact(domNode.children);
 
                   if (effect === "punch") {
-                    return <PunchWord color={highlightColor}>{content}</PunchWord>;
+                    return (
+                      <PunchWord color={highlightColor || "#ff0055"}>
+                        {content}
+                      </PunchWord>
+                    );
                   }
                   if (effect === "spin") {
-                    return <SpinInWord color={highlightColor}>{content}</SpinInWord>;
+                    return (
+                      <SpinInWord color={highlightColor || "#ff0055"}>
+                        {content}
+                      </SpinInWord>
+                    );
                   }
                 }
               },

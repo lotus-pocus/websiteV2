@@ -1,5 +1,6 @@
+// src/components/MobileMenu.tsx
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 type MobileMenuProps = {
   isDark: boolean;
@@ -7,7 +8,6 @@ type MobileMenuProps = {
 
 const MobileMenu = ({ isDark }: MobileMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
 
   return (
     <>
@@ -42,17 +42,10 @@ const MobileMenu = ({ isDark }: MobileMenuProps) => {
 
       {isOpen && (
         <div className="fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center gap-8 text-3xl">
-          {/* External link */}
-          <a
-            href="https://www.gamoola.com/gamoola/desktop/"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setIsOpen(false)}
-          >
-            Interactive
-          </a>
-
           {/* Internal routes */}
+          <Link to="/interactive" onClick={() => setIsOpen(false)}>
+            Interactive
+          </Link>
           <Link to="/" onClick={() => setIsOpen(false)}>
             Home
           </Link>

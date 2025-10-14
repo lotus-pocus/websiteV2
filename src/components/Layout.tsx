@@ -1,7 +1,20 @@
 import { ReactNode, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import CustomCursor from "./CustomCursor";
 import { Instagram, Facebook, Linkedin, Twitter } from "lucide-react";
 
+/* ---------- Scroll to top on route change ---------- */
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pathname]);
+
+  return null;
+};
+
+/* ---------- Layout Wrapper ---------- */
 const Layout = ({ children }: { children: ReactNode }) => {
   const [isDark, setIsDark] = useState(false);
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -36,12 +49,29 @@ const Layout = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <div className="relative isolation-isolate">
+    <div className="relative isolation-isolate z-0">
+      {/* Global scroll-to-top on route change */}
+      <ScrollToTop />
+
       <CustomCursor position={cursor} />
+
       <main className="p-0 m-0">{children}</main>
 
       {/* 👇 Footer with socials */}
-      <footer className="px-6 py-8 text-center text-sm text-neutral-400">
+      <footer
+        className="
+          relative 
+          z-[1000] 
+          will-change-transform 
+          transform-gpu 
+          px-6 py-8 
+          text-center text-sm text-neutral-400 
+          bg-transparent
+        "
+        style={{
+          transform: "translateZ(0)", // ensures its own compositing layer
+        }}
+      >
         <div className="flex justify-center gap-4 mb-3">
           <a
             href="https://www.instagram.com/gamoola3d"
@@ -49,7 +79,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             rel="noopener noreferrer"
             aria-label="Instagram"
           >
-            <Instagram className="w-5 h-5 hover:text-pink-500 transition-colors" />
+            <Instagram className="w-5 h-5 hover:text-pink-500 transition-colors filter-none" />
           </a>
           <a
             href="https://www.facebook.com/gamoola"
@@ -57,15 +87,15 @@ const Layout = ({ children }: { children: ReactNode }) => {
             rel="noopener noreferrer"
             aria-label="Facebook"
           >
-            <Facebook className="w-5 h-5 hover:text-blue-600 transition-colors" />
+            <Facebook className="w-5 h-5 hover:text-blue-600 transition-colors filter-none" />
           </a>
           <a
-            href="https://www.linkedin.com/in/company/gamoola"
+            href="https://www.linkedin.com/company/gamoola"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="LinkedIn"
           >
-            <Linkedin className="w-5 h-5 hover:text-blue-700 transition-colors" />
+            <Linkedin className="w-5 h-5 hover:text-blue-700 transition-colors filter-none" />
           </a>
           <a
             href="https://twitter.com/Gamoola3d"
@@ -73,7 +103,7 @@ const Layout = ({ children }: { children: ReactNode }) => {
             rel="noopener noreferrer"
             aria-label="Twitter"
           >
-            <Twitter className="w-5 h-5 hover:text-sky-500 transition-colors" />
+            <Twitter className="w-5 h-5 hover:text-sky-500 transition-colors filter-none" />
           </a>
         </div>
 

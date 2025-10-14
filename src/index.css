@@ -96,3 +96,15 @@ html, body {
   list-style-type: decimal;
   margin-left: 1.5rem;
 }
+
+mark {
+  background: none !important;
+  color: inherit;
+}
+
+footer {
+  position: relative;
+  z-index: 60;
+}
+
+

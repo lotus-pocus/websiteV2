@@ -1,8 +1,14 @@
 // src/pages/Work.tsx
 import { useEffect, useState } from "react";
+import Layout from "../components/Layout";
 import WorkFilterBar from "../components/work/WorkFilterBar";
 import WorkGrid from "../components/work/WorkGrid";
 import type { WorkExample, Tag } from "../types/work";
+
+/* ---------- Directus Response Types ---------- */
+type DirectusResponse<T> = {
+  data: T;
+};
 
 const Work = () => {
   const [examples, setExamples] = useState<WorkExample[]>([]);
@@ -15,32 +21,16 @@ const Work = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // ✅ Fetch work examples (with gallery relationship)
+        // ✅ Fetch Work Examples (typed)
         const exRes = await fetch(
-          `${base}/items/work_examples?fields=id,title,slug,description,category,
-          thumbnail.id,hover_video.id,hover_background_color,hover_text_color,
-          gallery.directus_files_id.id,
-          tags.tags_id.id,tags.tags_id.name,tags.tags_id.slug&sort=sort`
+          `${base}/items/work_examples?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*`
         );
-        const exData = await exRes.json();
+        const exData: DirectusResponse<WorkExample[]> = await exRes.json();
+        setExamples(Array.isArray(exData.data) ? exData.data : []);
 
-        // ✅ Normalise structure
-        const mapped = (exData.data || []).map((item: any) => ({
-          ...item,
-          thumbnail: item.thumbnail,
-          hover_video: item.hover_video,
-          gallery:
-            item.gallery?.map((g: any) => ({
-              id: g.directus_files_id.id,
-            })) || [],
-          tags: item.tags || [],
-        }));
-
-        setExamples(mapped);
-
-        // ✅ Fetch tags
+        // ✅ Fetch Tags (typed)
         const tagsRes = await fetch(`${base}/items/tags?fields=id,name,slug`);
-        const tagsData = await tagsRes.json();
+        const tagsData: DirectusResponse<Tag[]> = await tagsRes.json();
         setAllTags(Array.isArray(tagsData.data) ? tagsData.data : []);
       } catch (err) {
         console.error("Failed to fetch work data:", err);
@@ -56,38 +46,37 @@ const Work = () => {
     return (
       ex.title?.toLowerCase().includes(term) ||
       ex.description?.toLowerCase().includes(term) ||
-      ex.tags?.some((t: any) =>
-        t.tags_id?.name?.toLowerCase().includes(term)
-      )
+      ex.tags?.some((t) => t.tags_id?.name?.toLowerCase().includes(term))
     );
   });
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-10">
-      {/* ✅ Title + Search inline, responsive */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 pr-16">
-        {/* 👈 pr-16 ensures nothing sits under the burger */}
-        <h1 className="text-3xl md:text-4xl font-bold">our work.</h1>
+    <Layout>
+      <div className="min-h-screen bg-black text-white p-6 md:p-10">
+        {/* ✅ Title + Search inline, responsive */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4 pr-16">
+          <h1 className="text-3xl md:text-4xl font-bold">our work.</h1>
 
-        <input
-          type="text"
-          placeholder="Search projects..."
-          className="w-full md:w-80 lg:w-96 px-4 py-2 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          <input
+            type="text"
+            placeholder="Search projects..."
+            className="w-full md:w-80 lg:w-96 px-4 py-2 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* ✅ Tag Filter */}
+        <WorkFilterBar
+          allTags={allTags}
+          activeTag={activeTag}
+          setActiveTag={setActiveTag}
         />
+
+        {/* ✅ Grid (search + tag combined) */}
+        <WorkGrid examples={searchedExamples} activeTag={activeTag} />
       </div>
-
-      {/* ✅ Tag Filter */}
-      <WorkFilterBar
-        allTags={allTags}
-        activeTag={activeTag}
-        setActiveTag={setActiveTag}
-      />
-
-      {/* ✅ Grid (search + tag combined) */}
-      <WorkGrid examples={searchedExamples} activeTag={activeTag} />
-    </div>
+    </Layout>
   );
 };
 

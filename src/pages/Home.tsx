@@ -3,11 +3,11 @@ import Hero from "../components/Hero";
 import Layout from "../components/Layout";
 import About from "../components/About";
 import Section from "../components/Section";
-// import GameTrail from "../components/GameTrail";
-import ServicesGrid from "../components/ServicesGrid";
 import StudioIntro from "../components/StudioIntro";
 import ClientsGrid from "../components/ClientsGrid";
 import FeaturedLabs from "../components/FeaturedLabs";
+import ServicesTitle from "../components/ServicesTitle";
+import ServicesGridSimple from "../components/ServicesGridSimple";
 
 const Home: React.FC = () => {
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -20,17 +20,28 @@ const Home: React.FC = () => {
 
   return (
     <Layout>
-      {/* <GameTrail cursor={cursor} /> */}
-
+      {/* ---------- HERO ---------- */}
       <Section theme="dark" paddingClass="p-0 m-0">
         <Hero />
       </Section>
 
+      {/* ---------- ABOUT ---------- */}
       <About />
-      <ServicesGrid />
+
+      {/* ---------- OUR SERVICES ---------- */}
+      <ServicesTitle />
+      <ServicesGridSimple />
+
+      {/* ---------- STUDIO INTRO ---------- */}
       <StudioIntro />
-      <ClientsGrid/>
+
+      {/* ---------- CLIENTS ---------- */}
+      <ClientsGrid />
+
+      {/* ---------- FEATURED LABS ---------- */}
       <FeaturedLabs />
+
+      {/* ---------- FOOTER PLACEHOLDER ---------- */}
       <Section theme="dark">
         <div className="text-center text-gray-400 py-40">
           [ More content coming soon ]

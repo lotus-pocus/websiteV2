@@ -1,12 +1,13 @@
+// src/pages/Home.tsx
 import React, { useState, useEffect } from "react";
 import Hero from "../components/Hero";
 import Layout from "../components/Layout";
 import About from "../components/About";
 import Section from "../components/Section";
 // import GameTrail from "../components/GameTrail";
-import ServicesGrid from "../components/ServicesGrid";
+import ServicesList from "../components/ServicesList"; // 👈 updated import
 import StudioIntro from "../components/StudioIntro";
-import ClientsGrid from "../components/ClientsGrid";
+import ClientsTicker from "../components/ClientsTicker";
 import FeaturedLabs from "../components/FeaturedLabs";
 
 const Home: React.FC = () => {
@@ -22,15 +23,27 @@ const Home: React.FC = () => {
     <Layout>
       {/* <GameTrail cursor={cursor} /> */}
 
+      {/* Hero Section */}
       <Section theme="dark" paddingClass="p-0 m-0">
         <Hero />
       </Section>
 
+      {/* About Section */}
       <About />
-      <ServicesGrid />
+
+      {/* Updated Alternating Services Layout */}
+      <ServicesList />
+
+      {/* Studio Intro */}
       <StudioIntro />
-      <ClientsGrid/>
+
+      {/* Client Logos */}
+      <ClientsTicker />
+
+      {/* Featured Labs */}
       <FeaturedLabs />
+
+      {/* Placeholder section */}
       <Section theme="dark">
         <div className="text-center text-gray-400 py-40">
           [ More content coming soon ]

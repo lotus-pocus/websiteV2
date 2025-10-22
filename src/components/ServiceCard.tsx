@@ -10,29 +10,19 @@ type ServiceCardProps = {
   link?: string;
 };
 
-const ServiceCard = ({
-  title,
-  description,
-  image,
-  video,
-  link,
-}: ServiceCardProps) => {
+const ServiceCard = ({ title, description, image, video, link }: ServiceCardProps) => {
   const [hovered, setHovered] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [keepVideo, setKeepVideo] = useState(false); // 👈 keep video briefly after hover
+  const [keepVideo, setKeepVideo] = useState(false);
 
-  // detect portrait images
+  /* Detect portrait images */
   useEffect(() => {
     if (!image) return;
     const img = new Image();
     img.src = image;
     img.onload = () => setIsPortrait(img.height > img.width);
   }, [image]);
-
-  const mediaClass = isPortrait
-    ? "object-contain max-h-[400px] mx-auto"
-    : "object-cover w-full h-full";
 
   const handleMouseEnter = () => {
     setHovered(true);
@@ -42,76 +32,79 @@ const ServiceCard = ({
 
   const handleMouseLeave = () => {
     setHovered(false);
-    // delay unmount to avoid black flash
     setTimeout(() => setKeepVideo(false), 300);
   };
 
-  const content = (
+  /* ✅ Always fill the 16:9 box */
+  const mediaClass = isPortrait
+    ? "object-contain w-full h-full"
+    : "object-cover w-full h-full";
+
+  /* ✅ Main Card */
+  const card = (
     <div
-      className={`
-        relative rounded-2xl overflow-hidden shadow-md bg-black
-        transition-all duration-500 ease-in-out cursor-pointer
-        ${hovered ? "scale-[1.02] z-20" : "scale-100"}
-        aspect-[4/3]
-      `}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       role="link"
       tabIndex={0}
+      className={`relative overflow-hidden bg-neutral-900
+        shadow-lg transition-all duration-500 ease-[cubic-bezier(0.25,1,0.3,1)]
+        cursor-pointer ${hovered ? "scale-[1.02]" : "scale-100"}`}
+      style={{
+        width: "640px",        // fixed size
+        height: "360px",       // fixed size
+        maxWidth: "100%",      // responsive fallback
+        aspectRatio: "16 / 9", // ensures consistency
+      }}
     >
-      <div className="absolute inset-0 flex items-center justify-center">
-        {/* Image always visible */}
-        <img
-          src={image}
-          alt={title}
-          className={`${mediaClass} rounded-2xl absolute inset-0 transition-opacity duration-500 ${
-            hovered && videoLoaded ? "opacity-0" : "opacity-100"
+      {/* ---- Base Image ---- */}
+      <img
+        src={image}
+        alt={title}
+        className={`${mediaClass} transition-opacity duration-500 ${
+          hovered && videoLoaded ? "opacity-0" : "opacity-100"
+        }`}
+        loading="lazy"
+      />
+
+      {/* ---- Hover Video ---- */}
+      {video && keepVideo && (
+        <video
+          src={video}
+          autoPlay
+          loop
+          muted
+          playsInline
+          onLoadedData={() => setVideoLoaded(true)}
+          className={`${mediaClass} absolute inset-0 transition-opacity duration-700 ${
+            hovered && videoLoaded ? "opacity-100" : "opacity-0"
           }`}
-          loading="lazy"
         />
+      )}
 
-        {/* Keep video visible slightly longer after hover */}
-        {video && keepVideo && (
-          <video
-            src={video}
-            autoPlay
-            loop
-            muted
-            playsInline
-            onLoadedData={() => setVideoLoaded(true)}
-            className={`${mediaClass} rounded-2xl absolute inset-0 transition-opacity duration-500 ${
-              hovered && videoLoaded ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        )}
-      </div>
-
-      {/* Overlay text */}
+      {/* ---- Overlay Text ---- */}
       <div
-        className={`
-          absolute bottom-0 left-0 right-0 p-4 
-          transition-all duration-700 transform
-          ${hovered ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}
-          bg-black/60 text-white rounded-b-2xl
-        `}
+        className={`absolute bottom-0 left-0 right-0 p-4 
+          bg-black/60 text-white transition-all duration-500
+          ${hovered ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}`}
       >
-        <h3 className="text-xl font-bold">{description}</h3>
+        <h3 className="text-lg font-semibold">{description}</h3>
       </div>
     </div>
   );
 
-  // routing logic
+  /* Routing */
   if (link) {
     return link.startsWith("http") ? (
       <a href={link} target="_blank" rel="noopener noreferrer">
-        {content}
+        {card}
       </a>
     ) : (
-      <Link to={link}>{content}</Link>
+      <Link to={link}>{card}</Link>
     );
   }
 
-  return content;
+  return card;
 };
 
 export default ServiceCard;

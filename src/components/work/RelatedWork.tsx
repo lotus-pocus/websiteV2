@@ -4,8 +4,8 @@ import RelatedCard from "./RelatedCard";
 import type { WorkExample, Tag } from "../../types/work";
 
 type Props = {
-  currentId: number;
-  tags: Tag[];
+  currentId: number | null;
+  tags?: Tag[] | null;
 };
 
 const RelatedWork = ({ currentId, tags }: Props) => {
@@ -16,8 +16,16 @@ const RelatedWork = ({ currentId, tags }: Props) => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // filter by tags (or categories, depending on your schema)
-        const tagIds = tags.map((t) => t.id).join(",");
+        // ✅ Guard: don’t run if no current project or no tags
+        if (!currentId || !tags || tags.length === 0) return;
+
+        const tagIds = tags
+          .filter((t) => t && t.id)
+          .map((t) => t.id)
+          .join(",");
+
+        if (!tagIds) return;
+
         const url =
           `${base}/items/work_examples` +
           `?fields=id,title,slug,description,category,thumbnail.id,hover_video.id,hover_background_color,hover_text_color,tags.tags_id.*` +
@@ -26,9 +34,15 @@ const RelatedWork = ({ currentId, tags }: Props) => {
         const res = await fetch(url);
         const data = await res.json();
 
-        // exclude the current project
-        const filtered = (data.data || []).filter(
-          (ex: WorkExample) => ex.id !== currentId
+        // ✅ Guard against null or malformed data
+        if (!data || !Array.isArray(data.data)) {
+          console.warn("No valid related data returned from Directus");
+          return;
+        }
+
+        // Exclude the current project
+        const filtered = data.data.filter(
+          (ex: WorkExample) => ex && ex.id !== currentId
         );
 
         setRelated(filtered);
@@ -37,8 +51,8 @@ const RelatedWork = ({ currentId, tags }: Props) => {
       }
     };
 
-    if (tags.length > 0) fetchRelated();
-  }, [currentId, tags]);
+    fetchRelated();
+  }, [currentId, JSON.stringify(tags)]);
 
   if (!related || related.length === 0) return null;
 
@@ -61,7 +75,6 @@ const RelatedWork = ({ currentId, tags }: Props) => {
                 ? `${import.meta.env.VITE_DIRECTUS_URL}/assets/${ex.hover_video.id}`
                 : undefined
             }
-            // ✅ always navigate by slug
             link={ex.slug ? `/work/${ex.slug}` : `/work/${ex.id}`}
           />
         ))}

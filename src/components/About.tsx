@@ -1,19 +1,16 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import Section from "./Section";
 
-const TYPING_SPEED = 12; // smaller = faster typing
+const TYPING_SPEED = 12;
 
 const About = () => {
   const soundRef = useRef<HTMLAudioElement | null>(null);
-
   const [fullCopy, setFullCopy] = useState<string>("");
   const [displayedCopy, setDisplayedCopy] = useState<string>("");
   const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
   const [textColor, setTextColor] = useState<string>("#000000");
   const [highlightColor, setHighlightColor] = useState<string>("#ff0055");
 
-  /* ---------- Fetch Directus copy ---------- */
   useEffect(() => {
     const fetchAbout = async () => {
       try {
@@ -36,63 +33,17 @@ const About = () => {
     fetchAbout();
   }, []);
 
-  /* ---------- Typewriter effect ---------- */
   useEffect(() => {
     if (!fullCopy) return;
     setDisplayedCopy("");
     let i = 0;
-
     const interval = setInterval(() => {
       setDisplayedCopy(fullCopy.slice(0, i));
       i++;
       if (i > fullCopy.length) clearInterval(interval);
     }, TYPING_SPEED);
-
     return () => clearInterval(interval);
   }, [fullCopy]);
-
-  /* ---------- Hover sound (still active for “ga_mooo_la”) ---------- */
-  useEffect(() => {
-    const fetchHoverSound = async () => {
-      try {
-        const base = import.meta.env.VITE_DIRECTUS_URL as string;
-        const res = await fetch(
-          `${base}/items/sound_effects?filter[name][_eq]=ga_mooo_la_hover&fields=file.id,volume`
-        );
-        const data = await res.json();
-        const record = data?.data?.[0];
-        const fileId = record?.file?.id;
-        const volume = record?.volume ?? 1.0;
-
-        if (fileId && soundRef.current) {
-          soundRef.current.src = `${base}/assets/${fileId}`;
-          soundRef.current.volume = Math.max(0, Math.min(volume, 1.0));
-        }
-      } catch (err) {
-        console.error("Failed to fetch hover sound:", err);
-      }
-    };
-
-    fetchHoverSound();
-  }, []);
-
-  /* ---------- Unlock audio (hover only) ---------- */
-  useEffect(() => {
-    const unlock = () => {
-      if (soundRef.current) {
-        soundRef.current
-          .play()
-          .then(() => {
-            soundRef.current?.pause();
-            soundRef.current.currentTime = 0;
-          })
-          .catch(() => {});
-      }
-      window.removeEventListener("click", unlock);
-    };
-    window.addEventListener("click", unlock);
-    return () => window.removeEventListener("click", unlock);
-  }, []);
 
   const playHoverSound = () => {
     if (soundRef.current) {
@@ -101,13 +52,23 @@ const About = () => {
     }
   };
 
-  /* ---------- Render ---------- */
   return (
-    <Section
+    <section
       id="about"
-      paddingClass="px-8 py-24 text-2xl leading-relaxed"
-      backgroundColor={backgroundColor}
-      textColor={textColor}
+      className="relative px-8 py-24 text-2xl leading-relaxed"
+      style={{
+        backgroundColor,
+        color: textColor,
+
+        // ✅ 4% top slope, steeper downward bottom
+        clipPath: "polygon(0 4%, 100% 0, 100% 100%, 0 86%)",
+        WebkitClipPath: "polygon(0 4%, 100% 0, 100% 100%, 0 86%)",
+
+        // ✅ fixes divider thickness
+        overflow: "visible",
+        marginBottom: "-6vw", // pulls Services upward to meet slope
+        marginTop: "-1px", // hides hairline gap under Hero
+      }}
     >
       <div
         className="max-w-3xl mx-auto prose max-w-none"
@@ -165,7 +126,6 @@ const About = () => {
           – don’t ask),
         </motion.div>
 
-        {/* ✨ Typewriter effect (silent) */}
         <div
           className="whitespace-pre-wrap relative text-2xl leading-relaxed border-l-4 border-pink-500 pl-4"
           dangerouslySetInnerHTML={{ __html: displayedCopy }}
@@ -186,7 +146,7 @@ const About = () => {
           @keyframes blink { 50% { opacity: 0; } }
         `}
       </style>
-    </Section>
+    </section>
   );
 };
 

@@ -1,6 +1,6 @@
 // src/App.tsx
-import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
 
 import Home from "./pages/Home";
 import Work from "./pages/Work";
@@ -9,41 +9,24 @@ import Labs from "./pages/Labs";
 import LabDetail from "./pages/LabDetail";
 import AboutPage from "./pages/AboutPage";
 import Contact from "./pages/Contact";
-import Interactive from "./pages/Interactive"; // 👈 new page import
+import Interactive from "./pages/Interactive";
 
-import MobileMenu from "./components/MobileMenu";
-
-export default function App() {
-  useEffect(() => {
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
-  }, []);
-
+const App = () => {
   return (
-    <div className="relative isolation-isolate">
-      {/* Burger menu overlay (appears on all pages) */}
-      <MobileMenu isDark={true} />
-
+    // 👇 Layout wraps ALL routes (so it never unmounts)
+    <Layout>
       <Routes>
-        {/* Homepage */}
         <Route path="/" element={<Home />} />
-
-        {/* Work routes */}
         <Route path="/work" element={<Work />} />
         <Route path="/work/:slug" element={<WorkDetail />} />
-
-        {/* Labs routes */}
         <Route path="/labs" element={<Labs />} />
         <Route path="/labs/:id" element={<LabDetail />} />
-
-        {/* Interactive (iframe fullscreen experience) */}
-        <Route path="/interactive" element={<Interactive />} />
-
-        {/* Other pages */}
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/interactive" element={<Interactive />} />
       </Routes>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default App;

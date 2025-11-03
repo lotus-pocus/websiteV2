@@ -1,4 +1,3 @@
-// src/components/MobileMenu.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,56 +10,89 @@ const MobileMenu = ({ isDark }: MobileMenuProps) => {
 
   return (
     <>
-      {/* Burger OR Close button (only one shown at a time) */}
+      {/* ─── BURGER BUTTON ─────────────────────────────── */}
       {!isOpen ? (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed top-6 right-6 z-[99999] p-2"
-          aria-label="Open menu"
-          data-cursor="burger"
+        <div
+          className="fixed top-6 right-6 z-[99999]"
+          style={{
+            mixBlendMode: "normal", // ✅ isolate from background effects
+            isolation: "isolate",
+            pointerEvents: "auto",
+          }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className={`w-8 h-8 ${isDark ? "text-white" : "text-black"}`}
+          <button
+            onClick={() => setIsOpen(true)}
+            aria-label="Open menu"
+            data-cursor="burger"
+            className="p-2"
           >
-            <path d="M3 6h18v2H3z" />
-            <path d="M3 11h18v2H3z" />
-            <path d="M3 16h18v2H3z" />
-          </svg>
-        </button>
+            {/* Solid burger icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              className="w-8 h-8 transition-colors duration-300"
+              fill={isDark ? "#ffffff" : "#000000"} // ✅ solid fill
+              stroke="none" // ✅ remove outline
+              style={{
+                display: "block",
+                mixBlendMode: "normal",
+                filter: "none",
+              }}
+            >
+              <rect x="3" y="5" width="18" height="2" rx="1" />
+              <rect x="3" y="11" width="18" height="2" rx="1" />
+              <rect x="3" y="17" width="18" height="2" rx="1" />
+            </svg>
+          </button>
+        </div>
       ) : (
-        <button
-          onClick={() => setIsOpen(false)}
-          className="fixed top-6 right-6 z-[99999] p-2 text-4xl text-white"
-          aria-label="Close menu"
+        /* ─── CLOSE BUTTON ─────────────────────────────── */
+        <div
+          className="fixed top-6 right-6 z-[99999]"
+          style={{
+            mixBlendMode: "normal", // ✅ prevent cursor blending
+            isolation: "isolate",
+            pointerEvents: "auto",
+          }}
         >
-          ✕
-        </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            aria-label="Close menu"
+            className="p-2 text-4xl font-bold transition-colors duration-300"
+            style={{
+              color: isDark ? "#ffffff" : "#000000",
+              mixBlendMode: "normal",
+              filter: "none",
+            }}
+          >
+            ✕
+          </button>
+        </div>
       )}
 
+      {/* ─── OVERLAY ───────────────────────────────────── */}
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black text-white flex flex-col items-center justify-center gap-8 text-3xl">
-          {/* Internal routes */}
-          <Link to="/interactive" onClick={() => setIsOpen(false)}>
-            Interactive
-          </Link>
-          <Link to="/" onClick={() => setIsOpen(false)}>
-            Home
-          </Link>
-          <Link to="/work" onClick={() => setIsOpen(false)}>
-            Work
-          </Link>
-          <Link to="/labs" onClick={() => setIsOpen(false)}>
-            Labs
-          </Link>
-          <Link to="/about" onClick={() => setIsOpen(false)}>
-            About
-          </Link>
-          <Link to="/contact" onClick={() => setIsOpen(false)}>
-            Contact
-          </Link>
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-8 text-3xl"
+          style={{
+            backgroundColor: "black", // solid black background
+            color: "white",
+            mixBlendMode: "normal", // ✅ isolate from global effects
+            isolation: "isolate",
+          }}
+        >
+          {["Interactive", "Home", "Work", "Labs", "About", "Contact"].map(
+            (label) => (
+              <Link
+                key={label}
+                to={label === "Home" ? "/" : `/${label.toLowerCase()}`}
+                onClick={() => setIsOpen(false)}
+                className="hover:text-pink-400 transition-colors"
+              >
+                {label}
+              </Link>
+            )
+          )}
         </div>
       )}
     </>

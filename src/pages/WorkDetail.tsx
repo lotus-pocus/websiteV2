@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion"; // 👈 added
+import { motion } from "framer-motion";
 import parse from "html-react-parser";
 import VideoModal from "../components/VideoModal";
 import RelatedWork from "../components/work/RelatedWork";
@@ -46,7 +46,6 @@ const WorkDetail = () => {
       try {
         const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-        // Fetch current project by slug
         const exRes = await fetch(
           `${base}/items/work_examples?filter[slug][_eq]=${slug}&fields=id,title,slug,tags.tags_id.*`
         );
@@ -56,7 +55,6 @@ const WorkDetail = () => {
 
         if (!currentJob?.id) return;
 
-        // Fetch blocks linked to this job
         const blocksRes = await fetch(
           `${base}/items/work_blocks?filter[work_example_id][_eq]=${currentJob.id}&fields=id,type,copy,layout,media.directus_files_id.*,work_example_id.id,work_example_id.slug,work_example_id.title`
         );
@@ -70,8 +68,8 @@ const WorkDetail = () => {
     fetchData();
   }, [slug]);
 
+  /* ---------- Render helpers ---------- */
   const renderBlock = (block: WorkBlock) => {
-    // ---------- COPY BLOCK ----------
     if (block.type === "copy" && block.copy) {
       return (
         <div
@@ -83,11 +81,9 @@ const WorkDetail = () => {
       );
     }
 
-    // ---------- VIDEO BLOCK ----------
     if (block.type === "video" && block.media?.length) {
       const base = import.meta.env.VITE_DIRECTUS_URL as string;
 
-      // multi-column layout
       if (block.layout === "media-3-col") {
         return (
           <div
@@ -105,7 +101,8 @@ const WorkDetail = () => {
                   muted
                   playsInline
                   onClick={() => setSelectedVideo(url)}
-                  className="w-full shadow-lg object-contain cursor-pointer bg-black"
+                  className="w-full object-contain cursor-pointer bg-black pointer-events-auto"
+                  style={{ isolation: "auto" }} // ✅ prevent blocking blends
                 />
               );
             })}
@@ -113,16 +110,17 @@ const WorkDetail = () => {
         );
       }
 
-      // ---------- Full-width single video (banner style) ----------
       return block.media.map((m, idx) => {
-        const url = `${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`;
+        const url = `${base}/assets/${m.directus_files_id.id}`;
         return (
           <div
             key={`${block.id}-${idx}`}
-            className="w-screen flex justify-center bg-black mb-16"
+            className="w-screen flex justify-center mb-16"
             style={{
               marginLeft: "50%",
               transform: "translateX(-50%)",
+              pointerEvents: "none",
+              isolation: "auto", // ✅ allow blending
             }}
           >
             <video
@@ -131,45 +129,22 @@ const WorkDetail = () => {
               loop
               muted
               playsInline
-              onClick={() => setSelectedVideo(url)}
-              className="max-h-[95vh] w-auto object-contain cursor-pointer"
-              style={{
-                display: "block",
-              }}
+              className="max-h-[95vh] w-auto object-contain"
+              style={{ pointerEvents: "none" }}
             />
           </div>
         );
       });
     }
 
-    // ---------- IMAGE BLOCK ----------
     if (block.type === "image" && block.media?.length) {
-      // 3-column layout
-      if (block.layout === "media-3-col") {
-        return (
-          <div
-            key={block.id}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-10"
-          >
-            {block.media.map((m, idx) => (
-              <img
-                key={`${block.id}-${idx}`}
-                src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
-                alt={m.directus_files_id.filename_download}
-                className="w-full h-auto shadow-md object-cover"
-              />
-            ))}
-          </div>
-        );
-      }
-
-      // single image
       return block.media.map((m, idx) => (
         <img
           key={`${block.id}-${idx}`}
           src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${m.directus_files_id.id}`}
           alt={m.directus_files_id.filename_download}
-          className="mb-10 w-full shadow-md object-cover"
+          className="mb-10 w-full shadow-md object-cover pointer-events-none"
+          style={{ isolation: "auto" }}
         />
       ));
     }
@@ -177,9 +152,18 @@ const WorkDetail = () => {
     return null;
   };
 
+  /* ---------- Page render ---------- */
   return (
-    <div className="min-h-screen bg-black text-white p-10">
-      <Link to="/work" className="text-pink-400 underline mb-6 inline-block">
+    <div
+      className="min-h-screen text-white p-10 relative"
+      style={{ backgroundColor: "rgba(0,0,0,0.98)", isolation: "auto" }} // ✅ transparent black + no isolation
+    >
+      <div className="absolute inset-0 pointer-events-none" />
+
+      <Link
+        to="/work"
+        className="text-pink-400 underline mb-6 inline-block hover:text-pink-300"
+      >
         ← Back to All Work
       </Link>
 
@@ -188,22 +172,19 @@ const WorkDetail = () => {
       ) : (
         <>
           <h1 className="text-3xl font-bold mb-8">{job.title}</h1>
+
           {blocks.map((block) => renderBlock(block))}
 
-          {/* --- Animated Related Work heading (replays on project change + scroll re-entry) --- */}
           <motion.div
-            key={slug} // 👈 ensures re-mounts when a new project loads
+            key={slug}
             className="overflow-hidden"
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: false, amount: 0.2 }} // 👈 replays on scroll re-entry
+            viewport={{ once: false, amount: 0.2 }}
             variants={{
               hidden: {},
               visible: {
-                transition: {
-                  staggerChildren: 0.06,
-                  delayChildren: 0.2,
-                },
+                transition: { staggerChildren: 0.06, delayChildren: 0.2 },
               },
             }}
           >
@@ -215,10 +196,7 @@ const WorkDetail = () => {
                     hidden: { opacity: 0, y: 40 },
                     visible: { opacity: 1, y: 0 },
                   }}
-                  transition={{
-                    duration: 0.6,
-                    ease: [0.25, 0.1, 0.25, 1],
-                  }}
+                  transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                   style={{ display: "inline-block" }}
                 >
                   {char === " " ? "\u00A0" : char}
@@ -227,7 +205,6 @@ const WorkDetail = () => {
             </h2>
           </motion.div>
 
-          {/* Related Work Section */}
           <RelatedWork
             currentId={job.id}
             tags={job.tags?.map((t) => t.tags_id) || []}
@@ -235,12 +212,8 @@ const WorkDetail = () => {
         </>
       )}
 
-      {/* Video Modal */}
       {selectedVideo && (
-        <VideoModal
-          src={selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-        />
+        <VideoModal src={selectedVideo} onClose={() => setSelectedVideo(null)} />
       )}
     </div>
   );

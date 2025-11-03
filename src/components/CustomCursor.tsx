@@ -1,72 +1,84 @@
 // src/components/CustomCursor.tsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 type CursorProps = {
   position: { x: number; y: number };
 };
 
+const BLEND_LAYER_ID = "cursor-blend-layer";
+
+function ensureBlendLayer(): HTMLElement {
+  let layer = document.getElementById(BLEND_LAYER_ID) as HTMLElement | null;
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.id = BLEND_LAYER_ID;
+    Object.assign(layer.style, {
+      position: "fixed",
+      inset: "0",
+      pointerEvents: "none",
+      mixBlendMode: "difference",   // 👈 blend the whole layer
+      zIndex: "2147483646",
+      transform: "translateZ(0)",
+      // defensive: avoid accidental stacking traps
+      isolation: "auto",
+      background: "transparent",
+    });
+    document.body.appendChild(layer);
+  }
+  return layer;
+}
+
 const CustomCursor = ({ position }: CursorProps) => {
-  const [cursorType, setCursorType] = useState<"default" | "hover" | "burger">("default");
-  const [cursorColor, setCursorColor] = useState("#ffffff");
+  const location = useLocation();
+  const [mounted, setMounted] = useState(false);
+  const [lastPos, setLastPos] = useState({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  });
 
+  // Reset to center on route change
   useEffect(() => {
-    const fetchColor = async () => {
-      try {
-        const base = import.meta.env.VITE_DIRECTUS_URL as string;
-        const res = await fetch(`${base}/items/site_settings?fields=cursor_color`);
-        const data = await res.json();
-        const color = data?.data?.[0]?.cursor_color;
-        if (color) setCursorColor(color);
-      } catch (err) {
-        console.error("Failed to fetch cursor color:", err);
-      }
-    };
-    fetchColor();
-  }, []);
+    setLastPos({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  }, [location]);
 
-  // Check hover type
+  // Track mouse position
   useEffect(() => {
-    const checkHover = () => {
-      const hoveredElement = document.elementFromPoint(position.x, position.y);
-      if (!hoveredElement) return;
-      if (hoveredElement.closest("[data-cursor='burger']")) {
-        setCursorType("burger");
-      } else if (hoveredElement.closest("a, button, .cursor-hover, [data-cursor='hover']")) {
-        setCursorType("hover");
-      } else {
-        setCursorType("default");
-      }
-    };
-    checkHover();
-    const interval = setInterval(checkHover, 50);
-    return () => clearInterval(interval);
+    if (position.x > 0 && position.y > 0) setLastPos(position);
   }, [position]);
 
-  const size = 32;
-  const offset = size / 2;
-  const bgColor = cursorType === "burger" ? "#ff00aa" : cursorColor;
+  useEffect(() => setMounted(true), []);
 
-  return (
+  const size = 32; // adjust if you want
+  const offset = size / 2;
+
+  // The circle is plain white; the parent layer handles blending.
+  const cursor = (
     <motion.div
-      className="pointer-events-none fixed top-0 left-0 z-[10000]"
+      className="pointer-events-none fixed top-0 left-0"
       style={{
-        mixBlendMode: "difference",
-        borderRadius: "9999px",
-        backgroundColor: bgColor,
-      }}
-      animate={{
+        // no mixBlendMode here on the circle itself
         width: size,
         height: size,
-        x: position.x - offset,
-        y: position.y - offset,
+        borderRadius: "50%",
+        backgroundColor: "#ffffff",
+        transform: "translateZ(0)",
+      }}
+      animate={{
+        x: lastPos.x - offset,
+        y: lastPos.y - offset,
         opacity: 1,
       }}
-      transition={{
-        duration: 0, // 👈 instant follow — no lag
-      }}
+      transition={{ duration: 0 }}
     />
   );
+
+  if (!mounted) return null;
+
+  const layer = ensureBlendLayer();
+  return createPortal(cursor, layer);
 };
 
 export default CustomCursor;

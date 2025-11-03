@@ -20,7 +20,7 @@ body:not(.no-global-link) a:hover {
 html, body {
   margin: 0;
   padding: 0;
-  background-color: black; /* or remove entirely if you're styling via Tailwind */
+  background-color: transparent; /* or remove entirely if you're styling via Tailwind */
   min-height: 100vh;
   scroll-behavior: smooth;
 }
@@ -115,5 +115,13 @@ footer {
 * {
   cursor: none !important;
 }
+
+/* 🧩 Ensure blend-mode can escape parent stacking contexts */
+#root, main, body, html {
+  isolation: unset !important;
+  transform: none !important;
+  filter: none !important;
+}
+
 
 

@@ -172,8 +172,8 @@ const ServicesList = () => {
         className="py-20 text-white"
         style={{
           backgroundColor: "#000000",
-          clipPath: "polygon(0 0, 100% 3%, 100% 100%, 0 100%)",
-          WebkitClipPath: "polygon(0 0, 100% 3%, 100% 100%, 0 100%)",
+          clipPath: "polygon(0 0, 100% 2vw, 100% 100%, 0 100%)",
+          WebkitClipPath: "polygon(0 0, 100% 2vw, 100% 100%, 0 100%)",
           marginTop: "0", // ✅ prevent double overlap
           position: "relative",
           zIndex: 1,
@@ -190,9 +190,10 @@ const ServicesList = () => {
       className="py-20 text-white"
       style={{
         backgroundColor: "#000000",
-        clipPath: "polygon(0 0, 100% 3%, 100% 100%, 0 100%)",
-        WebkitClipPath: "polygon(0 0, 100% 3%, 100% 100%, 0 100%)",
-        marginTop: "0", // ✅ prevent double overlap
+        clipPath: "polygon(0 0, 100% 3vw, 100% 100%, 0 100%)",
+        WebkitClipPath: "polygon(0 0, 100% 3vw, 100% 100%, 0 100%)",
+        marginTop: "0",
+        // 👈 add slight downward offset
         position: "relative",
         zIndex: 1,
       }}

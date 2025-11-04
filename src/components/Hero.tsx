@@ -60,9 +60,10 @@ const Hero = () => {
         background: "transparent",
         margin: 0,
         padding: 0,
-        clipPath: "polygon(0 0,100% 0,100% 95%,0 100%)", // 👈 bottom diagonal cut
-        WebkitClipPath: "polygon(0 0,100% 0,100% 95%,0 100%)",
-        marginBottom: "-1vw"
+        clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 5vw), 0 100%)",
+        WebkitClipPath: "polygon(0 0, 100% 0, 100% calc(100% - 5vw), 0 100%)",
+
+        marginBottom: "-1vw",
       }}
     >
       <audio ref={soundRef} src="/sfx/pop.mp3" preload="auto" />

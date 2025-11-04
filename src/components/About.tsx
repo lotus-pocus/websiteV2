@@ -61,13 +61,10 @@ const About = () => {
         color: textColor,
 
         // ✅ 4% top slope, steeper downward bottom
-        clipPath: "polygon(0 4%, 100% 0, 100% 100%, 0 86%)",
-        WebkitClipPath: "polygon(0 4%, 100% 0, 100% 100%, 0 86%)",
-
-        // ✅ fixes divider thickness
-        overflow: "visible",
-        marginBottom: "-6vw", // pulls Services upward to meet slope
-        marginTop: "-1px", // hides hairline gap under Hero
+        clipPath: "polygon(0 5vw, 100% 0, 100% 100%, 0 calc(100% - 3vw))",
+        WebkitClipPath: "polygon(0 5vw, 100% 0, 100% 100%, 0 calc(100% - 3vw))",
+        marginTop: "-4vw",
+        marginBottom: "-2vw",
       }}
     >
       <div
